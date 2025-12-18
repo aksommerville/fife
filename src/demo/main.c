@@ -19,10 +19,14 @@ static void rcvsig(int sigid) {
 
 static void cb_close() {
   fprintf(stderr,"%s\n",__func__);
+  if (++sigc>=3) {
+    fprintf(stderr,"Too many unprocessed signals.\n");
+    exit(1);
+  }
 }
 
 static void cb_resize(int w,int h) {
-  fprintf(stderr,"%s %d,%d\n",__func__,w,h);
+  //fprintf(stderr,"%s %d,%d\n",__func__,w,h);
 }
 
 static void cb_focus(int focus) {
@@ -30,7 +34,24 @@ static void cb_focus(int focus) {
 }
 
 static void cb_expose(int x,int y,int w,int h) {
-  fprintf(stderr,"%s %d,%d,%d,%d\n",__func__,x,y,w,h);
+  //fprintf(stderr,"%s %d,%d,%d,%d\n",__func__,x,y,w,h);
+  int fbw=0,fbh=0,fbstride=0;
+  uint32_t *fb=wm_get_framebuffer(&fbw,&fbh,&fbstride);
+  if (!fb) return;
+  if (fbstride&3) return;
+  int fbstridewords=fbstride>>2;
+  uint32_t *dstrow=fb;
+  int yi=fbh;
+  uint32_t black=wm_pixel_from_rgbx(0x000000ff);
+  uint32_t white=wm_pixel_from_rgbx(0xffffffff);
+  for (;yi-->0;dstrow+=fbstridewords) {
+    uint32_t *dstp=dstrow;
+    int xi=fbw;
+    for (;xi-->0;dstp++) {
+      *dstp=((yi&1)==(xi&1))?white:black;
+    }
+  }
+  wm_framebuffer_dirty(x,y,w,h);
 }
 
 static int cb_key(int keycode,int value) {
@@ -43,7 +64,7 @@ static void cb_text(int codepoint) {
 }
 
 static void cb_mmotion(int x,int y) {
-  fprintf(stderr,"%s %d,%d\n",__func__,x,y);
+  //fprintf(stderr,"%s %d,%d\n",__func__,x,y);
 }
 
 static void cb_mbutton(int btnid,int value) {

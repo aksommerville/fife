@@ -18,7 +18,7 @@ src/lib: Unconditional units included in the library.
 - - [ ] Copy/paste. Find an interface amenable to all particpants.
 - [ ] Generic widget.
 - [ ] Window Manager implementations.
-- - [ ] X11
+- - [x] X11
 - - [ ] Wayland
 - - [ ] MacOS
 - - [ ] MS Windows
