@@ -10,6 +10,11 @@ src/opt: Units that must be explicitly enabled, in local/config.mk.
 src/lib: Unconditional units included in the library.
 ```
 
+This project will build `libfife` and also `fifet`, our text editor.
+I'm thinking the vast majority of the text editor's functionality will be implemented by `libfife`, so the actual app layer is thin enough to just ride along.
+
+Once `fifet` works, I'll being a new project `piccolo`, an image editor.
+
 ## TODO
 
 - [ ] Generate public header.
