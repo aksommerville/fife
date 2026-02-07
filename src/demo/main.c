@@ -1,4 +1,5 @@
 #include "lib/wm/wm.h"
+#include "lib/gui/gui.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -7,12 +8,14 @@
 static volatile int sigc=0;
 static void rcvsig(int sigid) {
   switch (sigid) {
-    case SIGINT: if (++sigc>=3) {
+    case SIGINT: gui_terminate_soon(gui_get_context(),1); if (++sigc>=3) {
         fprintf(stderr,"Too many unprocessed signals.\n");
         exit(1);
       } break;
   }
 }
+
+#if 0 /* Invoke wm directly. */
 
 /* WM callbacks.
  */
@@ -110,3 +113,32 @@ int main(int argc,char **argv) {
   fprintf(stderr,"%s: Normal exit.\n",argv[0]);
   return 0;
 }
+
+#endif
+
+#if 1 /* Use gui. */
+
+/* Main.
+ */
+ 
+int main(int argc,char **argv) {
+
+  signal(SIGINT,rcvsig);
+  
+  struct gui_delegate delegate={
+    //TODO
+  };
+  struct gui_context *gui=gui_context_new(&delegate);
+  if (!gui) {
+    fprintf(stderr,"%s: gui_context_new failed\n",argv[0]);
+    return 1;
+  }
+  
+  int result=gui_main(gui);
+  fprintf(stderr,"%s: Result %d from gui_main.\n",argv[0],result);
+  
+  gui_context_del(gui);
+  return result;
+}
+
+#endif
