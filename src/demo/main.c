@@ -1,5 +1,6 @@
 #include "lib/wm/wm.h"
 #include "lib/gui/gui.h"
+#include "lib/image/image.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -15,108 +16,32 @@ static void rcvsig(int sigid) {
   }
 }
 
-#if 0 /* Invoke wm directly. */
+struct widget_colorbox {
+  struct widget hdr;
+  uint32_t color;
+};
 
-/* WM callbacks.
- */
+#define WIDGET ((struct widget_colorbox*)widget)
 
-static void cb_close() {
-  fprintf(stderr,"%s\n",__func__);
-  if (++sigc>=3) {
-    fprintf(stderr,"Too many unprocessed signals.\n");
-    exit(1);
+static int _colorbox_init(struct widget *widget,const void *args,int argslen) {
+  if (argslen==sizeof(uint32_t)) {
+    WIDGET->color=*(uint32_t*)args;
   }
-}
-
-static void cb_resize(int w,int h) {
-  //fprintf(stderr,"%s %d,%d\n",__func__,w,h);
-}
-
-static void cb_focus(int focus) {
-  fprintf(stderr,"%s %d\n",__func__,focus);
-}
-
-static void cb_expose(int x,int y,int w,int h) {
-  //fprintf(stderr,"%s %d,%d,%d,%d\n",__func__,x,y,w,h);
-  int fbw=0,fbh=0,fbstride=0;
-  uint32_t *fb=wm_get_framebuffer(&fbw,&fbh,&fbstride);
-  if (!fb) return;
-  if (fbstride&3) return;
-  int fbstridewords=fbstride>>2;
-  uint32_t *dstrow=fb;
-  int yi=fbh;
-  uint32_t black=wm_pixel_from_rgbx(0x000000ff);
-  uint32_t white=wm_pixel_from_rgbx(0xffffffff);
-  for (;yi-->0;dstrow+=fbstridewords) {
-    uint32_t *dstp=dstrow;
-    int xi=fbw;
-    for (;xi-->0;dstp++) {
-      *dstp=((yi&1)==(xi&1))?white:black;
-    }
-  }
-  wm_framebuffer_dirty(x,y,w,h);
-}
-
-static int cb_key(int keycode,int value) {
-  fprintf(stderr,"%s 0x%08x=%d\n",__func__,keycode,value);
-  return 0; // Or nonzero to consume.
-}
-
-static void cb_text(int codepoint) {
-  fprintf(stderr,"%s U+%x\n",__func__,codepoint);
-}
-
-static void cb_mmotion(int x,int y) {
-  //fprintf(stderr,"%s %d,%d\n",__func__,x,y);
-}
-
-static void cb_mbutton(int btnid,int value) {
-  fprintf(stderr,"%s %d=%d\n",__func__,btnid,value);
-}
-
-static void cb_mwheel(int dx,int dy) {
-  fprintf(stderr,"%s %+d,%+d\n",__func__,dx,dy);
-}
-
-/* Main.
- */
-
-int main(int argc,char **argv) {
-
-  signal(SIGINT,rcvsig);
-
-  struct wm_delegate wmdelegate={
-    .cb_close=cb_close,
-    .cb_resize=cb_resize,
-    .cb_focus=cb_focus,
-    .cb_expose=cb_expose,
-    .cb_key=cb_key,
-    .cb_text=cb_text,
-    .cb_mmotion=cb_mmotion,
-    .cb_mbutton=cb_mbutton,
-    .cb_mwheel=cb_mwheel,
-  };
-  if (wm_init(&wmdelegate)<0) {
-    fprintf(stderr,"%s: wm_init failed\n",argv[0]);
-    return 1;
-  }
-  
-  while (!sigc) {
-    if (wm_update()<0) {
-      fprintf(stderr,"%s: wm_update failed\n",argv[0]);
-      return 1;
-    }
-    usleep(100000);
-  }
-  
-  wm_quit();
-  fprintf(stderr,"%s: Normal exit.\n",argv[0]);
   return 0;
 }
 
-#endif
+static void _colorbox_render(struct widget *widget,struct image *dst) {
+  image_fill_rect(dst,0,0,widget->w,widget->h,WIDGET->color);
+  image_fill_rect(dst,widget->w-10,widget->h-10,10,10,0xffffffff);
+  widget_render_children(widget,dst);
+}
 
-#if 1 /* Use gui. */
+static const struct widget_type widget_type_colorbox={
+  .name="colorbox",
+  .objlen=sizeof(struct widget_colorbox),
+  .init=_colorbox_init,
+  .render=_colorbox_render,
+};
 
 /* Main.
  */
@@ -134,11 +59,47 @@ int main(int argc,char **argv) {
     return 1;
   }
   
+  uint32_t bgcolor=0x80808080;
+  struct widget *root=gui_context_create_root(gui,&widget_type_colorbox,&bgcolor,sizeof(bgcolor));
+  if (!root) {
+    fprintf(stderr,"%s: gui_context_create_root failed\n",argv[0]);
+    return 1;
+  }
+  
+  // Four boxes. From left to right: Black, Red, Green, Blue.
+  struct widget *child;
+  bgcolor=wm_pixel_from_rgbx(0x000000ff);
+  if (child=widget_spawn(root,&widget_type_colorbox,&bgcolor,sizeof(bgcolor))) {
+    child->x=20;
+    child->y=100;
+    child->w=50;
+    child->h=50;
+  }
+  bgcolor=wm_pixel_from_rgbx(0xff0000ff);
+  if (child=widget_spawn(root,&widget_type_colorbox,&bgcolor,sizeof(bgcolor))) {
+    child->x=80;
+    child->y=100;
+    child->w=50;
+    child->h=50;
+  }
+  bgcolor=wm_pixel_from_rgbx(0x00ff00ff);
+  if (child=widget_spawn(root,&widget_type_colorbox,&bgcolor,sizeof(bgcolor))) {
+    child->x=140;
+    child->y=100;
+    child->w=50;
+    child->h=50;
+  }
+  bgcolor=wm_pixel_from_rgbx(0x0000ffff);
+  if (child=widget_spawn(root,&widget_type_colorbox,&bgcolor,sizeof(bgcolor))) {
+    child->x=200;
+    child->y=100;
+    child->w=50;
+    child->h=50;
+  }
+  
   int result=gui_main(gui);
   fprintf(stderr,"%s: Result %d from gui_main.\n",argv[0],result);
   
   gui_context_del(gui);
   return result;
 }
-
-#endif

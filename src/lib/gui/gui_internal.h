@@ -3,6 +3,7 @@
 
 #include "gui.h"
 #include "lib/wm/wm.h"
+#include "lib/image/image.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,9 @@ struct gui_context {
   struct gui_delegate delegate;
   volatile int terminate; // Per WM or client request.
   int termstatus;
+  int w,h; // From window manager.
+  struct widget *root;
+  int render_soon;
 };
 
 extern struct gui_context *gui_global_context;

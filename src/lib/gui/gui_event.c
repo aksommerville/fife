@@ -14,6 +14,16 @@ void gui_cb_close() {
  
 void gui_cb_resize(int w,int h) {
   fprintf(stderr,"%s %d,%d\n",__func__,w,h);
+  if ((w<1)||(h<1)) return;
+  if ((w==gui_global_context->w)&&(h==gui_global_context->h)) return;
+  gui_global_context->w=w;
+  gui_global_context->h=h;
+  struct widget *root=gui_global_context->root;
+  if (root) {
+    root->w=w;
+    root->h=h;
+    //TODO mark bounds dirty or call pack
+  }
 }
 
 /* Window focus or blur.
@@ -28,6 +38,23 @@ void gui_cb_focus(int focus) {
  
 void gui_cb_expose(int x,int y,int w,int h) {
   fprintf(stderr,"%s %d,%d,%d,%d\n",__func__,x,y,w,h);
+  struct widget *root=gui_global_context->root;
+  if (!root) return;
+  // Playing it dumb for now, and redraw the whole window on every exposure event.
+  int fbw=0,fbh=0,stride=0;
+  void *fb=wm_get_framebuffer(&fbw,&fbh,&stride);
+  if (!fb) return;
+  if ((root->w!=fbw)||(root->h!=fbh)) return; // This shouldn't happen, and I don't know what to make of it.
+  struct image image={
+    .v=fb,
+    .w=fbw,
+    .h=fbh,
+    .stride=stride,
+    .pixelsize=32,
+    .writeable=1,
+  };
+  root->type->render(root,&image);
+  wm_framebuffer_dirty(0,0,fbw,fbh);
 }
 
 /* Raw keystroke. USB-HID page 7.
@@ -64,4 +91,11 @@ void gui_cb_mbutton(int btnid,int value) {
  
 void gui_cb_mwheel(int dx,int dy) {
   fprintf(stderr,"%s %+d,%+d\n",__func__,dx,dy);
+  //XXX test scrolling.
+  struct widget *root=gui_global_context->root;
+  if (!root) return;
+  root->scrollx+=dx*5;
+  root->scrolly+=dy*5;
+  fprintf(stderr,"...scroll %d,%d\n",root->scrollx,root->scrolly);
+  gui_global_context->render_soon=1;
 }

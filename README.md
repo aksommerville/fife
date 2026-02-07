@@ -27,6 +27,8 @@ Once `fifet` works, I'll being a new project `piccolo`, an image editor.
 - - [ ] Wayland
 - - [ ] MacOS
 - - [ ] MS Windows
+- [ ] Text rendering.
+- [ ] Generic widget framework.
 - [ ] Widgets.
 - - [ ] Packer.
 - - [ ] Label.
@@ -43,3 +45,4 @@ Once `fifet` works, I'll being a new project `piccolo`, an image editor.
 - - [x] Serial.
 - - [ ] Image.
 - [ ] Plugin framework. WAMR?
+- [ ] 15-pixel font. (15 significant pixels; probly more like 20 with descenders)
