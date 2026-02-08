@@ -19,6 +19,14 @@ struct image {
 void image_del(struct image *image);
 int image_ref(struct image *image);
 
+/* Only works if the "fs" unit is enabled, and the appropriate decoder unit, eg "png".
+ */
+struct image *image_new_from_path(const char *path);
+
+/* eg png.
+ */
+struct image *image_new_decode(const void *src,int srcc);
+
 void image_fill_rect(struct image *image,int x,int y,int w,int h,uint32_t pixel);
 
 #endif

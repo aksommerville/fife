@@ -1,10 +1,13 @@
 #include "lib/wm/wm.h"
 #include "lib/gui/gui.h"
 #include "lib/image/image.h"
+#include "lib/font/font.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
+
+static struct font *font=0;
 
 static volatile int sigc=0;
 static void rcvsig(int sigid) {
@@ -33,6 +36,7 @@ static int _colorbox_init(struct widget *widget,const void *args,int argslen) {
 static void _colorbox_render(struct widget *widget,struct image *dst) {
   image_fill_rect(dst,0,0,widget->w,widget->h,WIDGET->color);
   image_fill_rect(dst,widget->w-10,widget->h-10,10,10,0xffffffff);
+  font_render_string(dst,0,0,font,"Hello cruel world!",-1);
   widget_render_children(widget,dst);
 }
 
@@ -49,6 +53,13 @@ static const struct widget_type widget_type_colorbox={
 int main(int argc,char **argv) {
 
   signal(SIGINT,rcvsig);
+  
+  const char *fontpath="src/lib/gui/img/font_bold_g0_8x16.png";
+  if (!(font=font_new_from_path(fontpath))) {
+    fprintf(stderr,"%s: Failed to load font.\n",fontpath);
+    return 1;
+  }
+  fprintf(stderr,"%s: Loaded font. w=%d h=%d\n",fontpath,font_get_width(font),font_get_height(font));
   
   struct gui_delegate delegate={
     //TODO
