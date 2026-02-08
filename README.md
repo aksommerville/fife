@@ -26,6 +26,7 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - - [ ] Focus ring.
 - [ ] Window Manager implementations.
 - - [x] X11
+- - - [x] Window is not getting keyboard focus by default. Was that just a fluke? ...seems so. Another run worked fine. We're using the same X11 logic as Egg v2.
 - - [ ] Wayland
 - - [ ] MacOS
 - - [ ] MS Windows

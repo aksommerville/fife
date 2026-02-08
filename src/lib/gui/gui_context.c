@@ -133,6 +133,7 @@ struct widget *gui_context_create_root(
   widget->y=0;
   widget->w=ctx->w;
   widget->h=ctx->h;
+  widget_pack(widget);
   return widget;
 }
 

@@ -22,7 +22,7 @@ void gui_cb_resize(int w,int h) {
   if (root) {
     root->w=w;
     root->h=h;
-    //TODO mark bounds dirty or call pack
+    widget_pack(root);
   }
 }
 

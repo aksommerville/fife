@@ -70,6 +70,18 @@ struct widget_type {
    */
   void (*render)(struct widget *widget,struct image *dst);
   
+  /* Fill (w,h) with your preferred size.
+   * Caller must prepopulate (w,h), and receiver may leave them untouched to accept that.
+   * Caller estimates the available space as (maxw,maxh).
+   * In any case, parents establish their children's bounds, and the children must accept it.
+   */
+  void (*measure)(int *w,int *h,struct widget *widget,int maxw,int maxh);
+  
+  /* Notification that bounds have changed.
+   * Pack your children and do whatever other layout work needs done.
+   */
+  void (*pack)(struct widget *widget);
+  
   //TODO events
 };
  
@@ -82,12 +94,14 @@ struct widget {
   int childc,childa;
   int x,y,w,h; // (x,y) relative to parent.
   int scrollx,scrolly; // My content is offset by so much. These are typically positive if not zero.
+  int padx,pady; // Interior padding. Generic pack and measure will use it. If you do those yourself, it's up to you.
 };
 
 void widget_del(struct widget *widget);
 int widget_ref(struct widget *widget);
 
 /* Create a widget and return a STRONG reference.
+ * Caller must pack the parent widget at some point after.
  */
 struct widget *widget_new(
   struct gui_context *ctx,
@@ -135,5 +149,10 @@ void widget_get_clip(int *x,int *y,int *w,int *h,const struct widget *widget);
  * ie this takes exactly the same arguments as the render hook.
  */
 void widget_render_children(struct widget *widget,struct image *dst);
+
+/* Hook wrappers, possibly with fallback logic if the hook is not implemented.
+ */
+void widget_measure(int *w,int *h,struct widget *widget,int maxw,int maxh);
+void widget_pack(struct widget *widget);
 
 #endif

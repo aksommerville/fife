@@ -232,3 +232,57 @@ void widget_render_children(struct widget *widget,struct image *dst) {
     child->type->render(child,&sub);
   }
 }
+
+/* Measure.
+ */
+ 
+void widget_measure(int *w,int *h,struct widget *widget,int maxw,int maxh) {
+  if (!widget) return;
+  if (widget->type->measure) {
+    widget->type->measure(w,h,widget,maxw,maxh);
+  } else if (widget->childc) {
+    // Take the single largest dimension desired by any of my children, and add my padding to it.
+    int defw=(*w)-(widget->padx<<1);
+    int defh=(*h)-(widget->pady<<1);
+    if (defw<0) defw=0;
+    if (defh<0) defh=0;
+    int whi=0,hhi=0;
+    struct widget **childp=widget->childv;
+    int i=widget->childc;
+    for (;i-->0;childp++) {
+      struct widget *child=*childp;
+      int chw=defw,chh=defh;
+      widget_measure(&chw,&chh,child,maxw,maxh);
+      if (chw>whi) whi=chw;
+      if (chh>hhi) hhi=chh;
+    }
+    *w=whi+(widget->padx<<1);
+    *h=hhi+(widget->pady<<1);
+  } else {
+    // No hook or children, retain the caller's default.
+  }
+}
+
+void widget_pack(struct widget *widget) {
+  if (!widget) return;
+  if (widget->type->pack) {
+    widget->type->pack(widget);
+  } else {
+    // All children get my full size, minus padding.
+    // If you don't have a pack hook, hopefully you don't take more than one child.
+    int chw=widget->w-(widget->padx<<1);
+    int chh=widget->h-(widget->pady<<1);
+    if (chw<0) chw=0;
+    if (chh<0) chh=0;
+    struct widget **childp=widget->childv;
+    int i=widget->childc;
+    for (;i-->0;childp++) {
+      struct widget *child=*childp;
+      child->x=widget->padx;
+      child->y=widget->pady;
+      child->w=chw;
+      child->h=chh;
+      widget_pack(child);
+    }
+  }
+}

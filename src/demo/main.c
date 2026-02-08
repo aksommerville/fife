@@ -17,34 +17,6 @@ static void rcvsig(int sigid) {
   }
 }
 
-struct widget_colorbox {
-  struct widget hdr;
-  uint32_t color;
-};
-
-#define WIDGET ((struct widget_colorbox*)widget)
-
-static int _colorbox_init(struct widget *widget,const void *args,int argslen) {
-  if (argslen==sizeof(uint32_t)) {
-    WIDGET->color=*(uint32_t*)args;
-  }
-  return 0;
-}
-
-static void _colorbox_render(struct widget *widget,struct image *dst) {
-  image_fill_rect(dst,0,0,widget->w,widget->h,WIDGET->color);
-  image_fill_rect(dst,widget->w-10,widget->h-10,10,10,0xffffffff);
-  font_render_string(dst,0,0,gui_get_default_font(widget->ctx),"Hello cruel world!",-1);
-  widget_render_children(widget,dst);
-}
-
-static const struct widget_type widget_type_colorbox={
-  .name="colorbox",
-  .objlen=sizeof(struct widget_colorbox),
-  .init=_colorbox_init,
-  .render=_colorbox_render,
-};
-
 /* Main.
  */
  
@@ -60,46 +32,6 @@ int main(int argc,char **argv) {
     fprintf(stderr,"%s: gui_context_new failed\n",argv[0]);
     return 1;
   }
-  
-  /*XXX
-  uint32_t bgcolor=0x80808080;
-  struct widget *root=gui_context_create_root(gui,&widget_type_colorbox,&bgcolor,sizeof(bgcolor));
-  if (!root) {
-    fprintf(stderr,"%s: gui_context_create_root failed\n",argv[0]);
-    return 1;
-  }
-  
-  // Four boxes. From left to right: Black, Red, Green, Blue.
-  struct widget *child;
-  bgcolor=wm_pixel_from_rgbx(0x000000ff);
-  if (child=widget_spawn(root,&widget_type_colorbox,&bgcolor,sizeof(bgcolor))) {
-    child->x=20;
-    child->y=100;
-    child->w=50;
-    child->h=50;
-  }
-  bgcolor=wm_pixel_from_rgbx(0xff0000ff);
-  if (child=widget_spawn(root,&widget_type_colorbox,&bgcolor,sizeof(bgcolor))) {
-    child->x=80;
-    child->y=100;
-    child->w=50;
-    child->h=50;
-  }
-  bgcolor=wm_pixel_from_rgbx(0x00ff00ff);
-  if (child=widget_spawn(root,&widget_type_colorbox,&bgcolor,sizeof(bgcolor))) {
-    child->x=140;
-    child->y=100;
-    child->w=50;
-    child->h=50;
-  }
-  bgcolor=wm_pixel_from_rgbx(0x0000ffff);
-  if (child=widget_spawn(root,&widget_type_colorbox,&bgcolor,sizeof(bgcolor))) {
-    child->x=200;
-    child->y=100;
-    child->w=50;
-    child->h=50;
-  }
-  */
   
   struct widget_args_textedit args={
   };
