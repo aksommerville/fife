@@ -25,6 +25,8 @@ int main(int argc,char **argv) {
   signal(SIGINT,rcvsig);
   
   struct gui_delegate delegate={
+    .update_rate=60.0,
+    .log_clock_at_quit=1,
     //TODO
   };
   struct gui_context *gui=gui_context_new(&delegate);

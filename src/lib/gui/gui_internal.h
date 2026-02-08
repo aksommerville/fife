@@ -22,6 +22,7 @@ struct gui_context {
   int w,h; // From window manager.
   struct widget *root;
   int render_soon;
+  int tree_changed; // Widgets set nonzero any time a widget is added, removed, or order changed.
   
   // First in the list is our default.
   struct font_entry {

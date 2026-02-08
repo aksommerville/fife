@@ -24,6 +24,7 @@ static int _textedit_init(struct widget *widget,const void *args,int argslen) {
  
 static void _textedit_render(struct widget *widget,struct image *dst) {
   image_fill_rect(dst,0,0,widget->w,widget->h,0);
+  image_fill_rect(dst,10-widget->scrollx,10-widget->scrolly,90,40,0xffffffff);
   //TODO
 }
 

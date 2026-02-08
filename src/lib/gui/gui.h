@@ -23,6 +23,8 @@ struct font;
  
 struct gui_delegate {
   void *userdata;
+  double update_rate; // hz, only relevant if you use gui_main.
+  int log_clock_at_quit; // 1 to show counters and CPU consumption on normal exits. >1 to log on abnormal exits too.
   //TODO
 };
  
@@ -55,6 +57,11 @@ void gui_terminate_soon(struct gui_context *ctx,int status);
 struct font *gui_get_default_font(struct gui_context *ctx);
 struct font *gui_get_named_font(struct gui_context *ctx,const char *name,int namec);
 
+/* If you're not using gui_main(), call this often.
+ * Does not block for timing, that's your concern.
+ */
+int gui_update(struct gui_context *ctx,double elapsed);
+
 /* Generic widget.
  *******************************************************************/
  
@@ -81,6 +88,10 @@ struct widget_type {
    * Pack your children and do whatever other layout work needs done.
    */
   void (*pack)(struct widget *widget);
+  
+  /* Notifiction that you've gained (1) or lost (0) keyboard focus.
+   */
+  void (*focus)(struct widget *widget,int focus);
   
   //TODO events
 };
@@ -154,5 +165,39 @@ void widget_render_children(struct widget *widget,struct image *dst);
  */
 void widget_measure(int *w,int *h,struct widget *widget,int maxw,int maxh);
 void widget_pack(struct widget *widget);
+
+/* Timing regulator, used by gui_main().
+ *************************************************************************/
+ 
+struct gui_clock {
+  double period; // Desired update period in seconds. Typically 1/60.
+  double starttime_real;
+  double starttime_cpu;
+  double prevtime;
+  double nexttime;
+  int framec;
+  int panicc;
+};
+
+// Read the realtime and cpu clocks.
+double gui_now_real();
+double gui_now_cpu();
+void gui_sleep(double s);
+
+/* Prepare a clock that will tick at the given rate.
+ * If we don't like (rate_hz), we'll make something up.
+ */
+void gui_clock_init(struct gui_clock *clock,double rate_hz);
+
+/* Examine current and recent time.
+ * If it's too soon, we'll sleep into the next period.
+ * Returns time elapsed since the last tick, or a sensible lie on the first tick.
+ */
+double gui_clock_tick(struct gui_clock *clock);
+
+/* Print frame count and CPU consumption to stderr, if we have sufficient data.
+ * This is something I always do in games, where performance matters. For these general GUI apps, not so important.
+ */
+void gui_clock_report(struct gui_clock *clock);
 
 #endif

@@ -89,6 +89,7 @@ int widget_childv_insert(struct widget *parent,int p,struct widget *child) {
     memmove(parent->childv+pvp,parent->childv+pvp+1,sizeof(void*)*(parent->childc-1-pvp));
     memmove(parent->childv+p+1,parent->childv+p,sizeof(void*)*(parent->childc-1-p));
     parent->childv[p]=child;
+    parent->ctx->tree_changed=1;
     return 0;
   }
   
@@ -108,6 +109,7 @@ int widget_childv_insert(struct widget *parent,int p,struct widget *child) {
   parent->childv[p]=child;
   parent->childc++;
   child->parent=parent;
+  parent->ctx->tree_changed=1;
   return 0;
 }
 
@@ -125,6 +127,7 @@ int widget_childv_remove_at(struct widget *parent,int p) {
   memmove(parent->childv+p,parent->childv+p+1,sizeof(void*)*(parent->childc-p));
   child->parent=0;
   widget_del(child);
+  parent->ctx->tree_changed=1;
   return 0;
 }
 

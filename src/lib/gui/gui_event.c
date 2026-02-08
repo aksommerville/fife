@@ -37,24 +37,10 @@ void gui_cb_focus(int focus) {
  */
  
 void gui_cb_expose(int x,int y,int w,int h) {
-  //fprintf(stderr,"%s %d,%d,%d,%d\n",__func__,x,y,w,h);
-  struct widget *root=gui_global_context->root;
-  if (!root) return;
-  // Playing it dumb for now, and redraw the whole window on every exposure event.
-  int fbw=0,fbh=0,stride=0;
-  void *fb=wm_get_framebuffer(&fbw,&fbh,&stride);
-  if (!fb) return;
-  if ((root->w!=fbw)||(root->h!=fbh)) return; // This shouldn't happen, and I don't know what to make of it.
-  struct image image={
-    .v=fb,
-    .w=fbw,
-    .h=fbh,
-    .stride=stride,
-    .pixelsize=32,
-    .writeable=1,
-  };
-  root->type->render(root,&image);
-  wm_framebuffer_dirty(0,0,fbw,fbh);
+  if (!gui_global_context) return;
+  gui_global_context->render_soon=1;
+  // For now at least, we're ignoring the exposed bounds and redrawing everything whenever anything needs it.
+  // That sounds heavy-handed but in truth it's probably the right way to go.
 }
 
 /* Raw keystroke. USB-HID page 7.

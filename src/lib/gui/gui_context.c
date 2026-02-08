@@ -38,6 +38,7 @@ struct gui_context *gui_context_new(const struct gui_delegate *delegate) {
   struct gui_context *ctx=calloc(1,sizeof(struct gui_context));
   if (!ctx) return 0;
   if (delegate) ctx->delegate=*delegate;
+  if (ctx->delegate.update_rate<1.0) ctx->delegate.update_rate=60.0;
   gui_global_context=ctx;
   
   struct wm_delegate wmdelegate={
@@ -70,7 +71,7 @@ struct gui_context *gui_context_new(const struct gui_delegate *delegate) {
 /* Render (not in response to an exposure).
  */
  
-static void gui_render(struct gui_context *ctx) {
+void gui_render(struct gui_context *ctx) {
   if (!ctx->root) return;
   int fbw=0,fbh=0,stride=0;
   void *fb=wm_get_framebuffer(&fbw,&fbh,&stride);
@@ -88,22 +89,40 @@ static void gui_render(struct gui_context *ctx) {
   wm_framebuffer_dirty(0,0,fbw,fbh);
 }
 
+/* Routine update.
+ */
+ 
+int gui_update(struct gui_context *ctx,double elapsed) {
+  if (ctx->tree_changed) {
+    ctx->tree_changed=0;
+    //TODO Rebuild focus ring.
+  }
+  if (ctx->render_soon) {
+    ctx->render_soon=0;
+    gui_render(ctx);
+  }
+  return 0;
+}
+
 /* Main.
  */
 
 int gui_main(struct gui_context *ctx) {
-  fprintf(stderr,"%s...\n",__func__);
   if (!ctx||(ctx!=gui_global_context)) return 1;
+  struct gui_clock clock;
+  gui_clock_init(&clock,ctx->delegate.update_rate);
   while (!ctx->terminate) {
-    usleep(100000);//TODO Get smarter, with a poll or something.
     if (wm_update()<0) {
+      if (ctx->delegate.log_clock_at_quit>1) gui_clock_report(&clock);
       return 1;
     }
-    if (ctx->render_soon) {
-      ctx->render_soon=0;
-      gui_render(ctx);
+    double elapsed=gui_clock_tick(&clock);
+    if (gui_update(ctx,elapsed)<0) {
+      if (ctx->delegate.log_clock_at_quit>1) gui_clock_report(&clock);
+      return 1;
     }
   }
+  if (ctx->delegate.log_clock_at_quit) gui_clock_report(&clock);
   return 0;
 }
 
