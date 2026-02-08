@@ -17,6 +17,21 @@ static void rcvsig(int sigid) {
   }
 }
 
+/* Button callbacks.
+ */
+ 
+static void cb_1(struct widget *widget,void *userdata) {
+  fprintf(stderr,"Thou hast done well in clicking the button.\n");
+}
+
+static void cb_2(struct widget *widget,void *userdata) {
+  fprintf(stderr,"%s\n",__func__);
+}
+
+static void cb_3(struct widget *widget,void *userdata) {
+  fprintf(stderr,"%s\n",__func__);
+}
+
 /* Main.
  */
  
@@ -49,10 +64,10 @@ int main(int argc,char **argv) {
   struct widget *root=0,*child;
   {
     struct widget_args_packer args={
-      .orientation='x',
+      .orientation='y',
       .reverse=0,
       .majoralign=0,
-      .minoralign=0,
+      .minoralign=-2,
       .spacing=5,
     };
     root=gui_context_create_root(gui,&widget_type_packer,&args,sizeof(args));
@@ -64,26 +79,32 @@ int main(int argc,char **argv) {
     root->padx=5;
     root->pady=5;
   }
-  if (child=widget_spawn(root,&widget_type_packer,0,0)) {
-    child->bgcolor=0xff000000;
-    child->padx=20;
-    child->pady=20;
+  {
+    struct widget_args_button args={
+      .text="Click me!",
+      .textc=-1,
+      .cb=cb_1,
+    };
+    if (child=widget_spawn(root,&widget_type_button,&args,sizeof(args))) {
+    }
   }
-  if (child=widget_spawn(root,&widget_type_packer,0,0)) {
-    child->bgcolor=0x00ff0000;
-    child->padx=20;
-    child->pady=40;
-    //widget_packer_flex_child(root,child,-1);
+  {
+    struct widget_args_button args={
+      .text="No, me!",
+      .textc=-1,
+      .cb=cb_2,
+    };
+    if (child=widget_spawn(root,&widget_type_button,&args,sizeof(args))) {
+    }
   }
-  if (child=widget_spawn(root,&widget_type_packer,0,0)) {
-    child->bgcolor=0x0000ff00;
-    child->padx=40;
-    child->pady=20;
-  }
-  if (child=widget_spawn(root,&widget_type_packer,0,0)) {
-    child->bgcolor=0x000000ff;
-    child->padx=40;
-    child->pady=40;
+  {
+    struct widget_args_button args={
+      .text="Click somebody else.",
+      .textc=-1,
+      .cb=cb_3,
+    };
+    if (child=widget_spawn(root,&widget_type_button,&args,sizeof(args))) {
+    }
   }
   /**/
   

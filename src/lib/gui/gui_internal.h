@@ -35,6 +35,11 @@ struct gui_context {
   // Focus ring.
   struct widget **focusv; // STRONG
   int focusc,focusa,focusp;
+  
+  uint8_t modifiers;
+  struct widget *track; // STRONG
+  int track_in;
+  int mx,my;
 };
 
 extern struct gui_context *gui_global_context;
@@ -47,8 +52,7 @@ void gui_cb_close();
 void gui_cb_resize(int w,int h);
 void gui_cb_focus(int focus);
 void gui_cb_expose(int x,int y,int w,int h);
-int gui_cb_key(int keycode,int value);
-void gui_cb_text(int codepoint);
+void gui_cb_key(int keycode,int value,int codepoint);
 void gui_cb_mmotion(int x,int y);
 void gui_cb_mbutton(int btnid,int value);
 void gui_cb_mwheel(int dx,int dy);

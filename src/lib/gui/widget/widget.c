@@ -171,17 +171,23 @@ struct widget *widget_get_root(struct widget *widget) {
 void widget_coords_global_from_local(int *x,int *y,const struct widget *widget) {
   if (!widget) return;
   do {
-    (*x)-=widget->x-widget->scrollx;
-    (*y)-=widget->y-widget->scrolly;
+    (*x)+=widget->x-widget->scrollx;
+    (*y)+=widget->y-widget->scrolly;
   } while (widget=widget->parent);
 }
 
 void widget_coords_local_from_global(int *x,int *y,const struct widget *widget) {
   if (!widget) return;
   do {
-    (*x)+=widget->x-widget->scrollx;
-    (*y)+=widget->y-widget->scrolly;
+    (*x)-=widget->x-widget->scrollx;
+    (*y)-=widget->y-widget->scrolly;
   } while (widget=widget->parent);
+}
+
+int widget_point_in_bounds(const struct widget *widget,int x,int y) {
+  widget_coords_local_from_global(&x,&y,widget);
+  if ((x<0)||(y<0)||(x>=widget->w)||(y>=widget->h)) return 0;
+  return 1;
 }
 
 void widget_get_clip(int *x,int *y,int *w,int *h,const struct widget *widget) {

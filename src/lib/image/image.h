@@ -28,5 +28,8 @@ struct image *image_new_from_path(const char *path);
 struct image *image_new_decode(const void *src,int srcc);
 
 void image_fill_rect(struct image *image,int x,int y,int w,int h,uint32_t pixel);
+void image_fill_rect_halftone(struct image *image,int x,int y,int w,int h,uint32_t pixel);
+void image_frame_rect(struct image *image,int x,int y,int w,int h,uint32_t pixel);
+void image_frame_rect_dotted(struct image *image,int x,int y,int w,int h,uint32_t pixel);
 
 #endif

@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 struct font {
+  int refc;
   int w,h; // Of one glyph.
   uint8_t *img; // A1 big-endian, the way PNG does it.
   int imgw,imgh;

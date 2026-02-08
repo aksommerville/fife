@@ -27,6 +27,23 @@ struct widget_args_packer {
  */
 int widget_packer_flex_child(struct widget *widget,struct widget *child,int flex);
 
+/* button: Icon and label in a box you can focus or click.
+ *****************************************************************************/
+ 
+extern const struct widget_type widget_type_button;
+
+struct widget_args_button {
+  struct font *font;
+  const char *text;
+  int textc;
+  void (*cb)(struct widget *widget,void *userdata);
+  void *userdata;
+};
+
+int widget_button_set_font(struct widget *widget,struct font *font);
+int widget_button_set_text(struct widget *widget,const char *src,int srcc);
+int widget_button_set_callback(struct widget *widget,void (*cb)(struct widget *widget,void *userdata),void *userdata);
+
 /* textedit: Edit text with scrolling.
  ********************************************************************************/
  

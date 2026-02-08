@@ -18,8 +18,7 @@ struct wm_delegate {
   void (*cb_resize)(int w,int h);
   void (*cb_focus)(int focus);
   void (*cb_expose)(int x,int y,int w,int h);
-  int (*cb_key)(int keycode,int value); // Nonzero to consume. If zero, we may fire cb_text after. (keycode) is USB-HID page 7.
-  void (*cb_text)(int codepoint); // Unicode.
+  void (*cb_key)(int keycode,int value,int codepoint); // (codepoint) only set when (value) nonzero, and sometimes there isn't one. (keycode) is USB-HID page 7.
   void (*cb_mmotion)(int x,int y); // (x,y) in window client coords. May be OOB, or WM may never report OOBs.
   void (*cb_mbutton)(int btnid,int value); // (1,2,3)=(left,right,center)
   void (*cb_mwheel)(int dx,int dy); // One unit should be one click of the wheel.

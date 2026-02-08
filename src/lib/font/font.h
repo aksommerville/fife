@@ -20,6 +20,7 @@ struct font;
 struct image;
 
 void font_del(struct font *font);
+int font_ref(struct font *font);
 
 /* We will digest and copy (image), you can free it once the font is instantiated.
  * We can only read from a path if the "fs" and "png" units are present.

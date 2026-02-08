@@ -25,6 +25,7 @@ void gui_context_del(struct gui_context *ctx) {
     while (ctx->focusc-->0) widget_del(ctx->focusv[ctx->focusc]);
     free(ctx->focusv);
   }
+  widget_del(ctx->track);
   widget_del(ctx->root);
   if (ctx->fontv) {
     while (ctx->fontc-->0) font_entry_cleanup(ctx->fontv+ctx->fontc);

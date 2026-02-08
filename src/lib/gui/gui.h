@@ -74,8 +74,28 @@ int gui_update(struct gui_context *ctx,double elapsed);
 struct widget *gui_focus_next(struct gui_context *ctx,int d);
 struct widget *gui_focus_widget(struct gui_context *ctx,struct widget *widget);
 
+uint8_t gui_get_modifiers(const struct gui_context *ctx);
+#define GUI_MOD_LCTL     0x01
+#define GUI_MOD_LSHIFT   0x02
+#define GUI_MOD_LALT     0x04
+#define GUI_MOD_LSUPER   0x08
+#define GUI_MOD_RCTL     0x10
+#define GUI_MOD_RSHIFT   0x20
+#define GUI_MOD_RALT     0x40
+#define GUI_MOD_RSUPER   0x80
+#define GUI_MOD_CTL (GUI_MOD_LCTL|GUI_MOD_RCTL)
+#define GUI_MOD_SHIFT (GUI_MOD_LSHIFT|GUI_MOD_RSHIFT)
+#define GUI_MOD_ALT (GUI_MOD_LALT|GUI_MOD_RALT)
+#define GUI_MOD_SUPER (GUI_MOD_LSUPER|GUI_MOD_RSUPER)
+
 /* Generic widget.
  *******************************************************************/
+ 
+#define GUI_TRACK_BEGIN 1
+#define GUI_TRACK_EXIT 2
+#define GUI_TRACK_REENTER 3
+#define GUI_TRACK_END_OUT 4
+#define GUI_TRACK_END_IN 5
  
 struct widget_type {
   const char *name;
@@ -107,7 +127,24 @@ struct widget_type {
    */
   void (*focus)(struct widget *widget,int focus);
   
-  //TODO events
+  /* Key press or release while focussed.
+   * Return nonzero to acknowledge, otherwise default behavior may ensue. (eg Tab to adjust focus)
+   */
+  int (*key)(struct widget *widget,int keycode,int value,int codepoint);
+  
+  /* Triggerable by mouse or keyboard.
+   * Preferred if you don't specifically care how you get actuated.
+   */
+  void (*activate)(struct widget *widget);
+  
+  /* Notify of mouse tracking activity.
+   * On GUI_STATE_BEGIN and GUI_STATE_END_IN, you must return acknowledgement:
+   * BEGIN: Acknowledge to allow tracking, otherwise we terminate the activity.
+   * END_IN: Acknowledge to suppress generic activation.
+   */
+  int (*track)(struct widget *widget,int state);
+  
+  //TODO will also need raw mouse events
 };
  
 struct widget {
@@ -122,6 +159,7 @@ struct widget {
   int padx,pady; // Interior padding. Generic pack and measure will use it. If you do those yourself, it's up to you.
   uint32_t bgcolor; // If nonzero, fill my background with this. (individual render hooks are expected to, and the no-hook default will).
   int focusable; // Nonzero to accept keyboard focus. Set (ctx->tree_changed) if you change.
+  int clickable; // Nonzero to enable click-and-track from the mouse.
   uint32_t parentuse; // Private field for widget's parent's use only. eg for layout bookkeeping. Resets to zero when reparenting.
 };
 
@@ -168,6 +206,8 @@ struct widget *widget_get_root(struct widget *widget);
  */
 void widget_coords_global_from_local(int *x,int *y,const struct widget *widget);
 void widget_coords_local_from_global(int *x,int *y,const struct widget *widget);
+
+int widget_point_in_bounds(const struct widget *widget,int x,int y);
 
 /* Examine all ancestor boundaries and return the bounds in global space that this widget clips to.
  */

@@ -5,8 +5,19 @@
  
 void font_del(struct font *font) {
   if (!font) return;
+  if (font->refc-->1) return;
   if (font->img) free(font->img);
   free(font);
+}
+
+/* Retain.
+ */
+ 
+int font_ref(struct font *font) {
+  if (!font) return -1;
+  if ((font->refc<1)||(font->refc>=INT_MAX)) return -1;
+  font->refc++;
+  return 0;
 }
 
 /* New, from image.
@@ -21,6 +32,7 @@ struct font *font_new(struct image *image) {
   
   struct font *font=calloc(1,sizeof(struct font));
   if (!font) return 0;
+  font->refc=1;
   
   font->imgw=image->w;
   font->imgh=image->h;

@@ -4,34 +4,31 @@
  */
  
 static int wm_x11_evt_key(XKeyEvent *evt,int value) {
+  if (!wm_x11.delegate.cb_key) return 0;
 
-  /* Pass the raw keystroke. */
-  if (wm_x11.delegate.cb_key) {
-    KeySym keysym=XkbKeycodeToKeysym(wm_x11.dpy,evt->keycode,0,0);
-    if (keysym) {
-      int keycode=wm_x11_usb_usage_from_keysym((int)keysym);
-      if (keycode) {
-        int err=wm_x11.delegate.cb_key(keycode,value);
-        if (err) return err; // Stop here if acknowledged.
-      }
-    }
-  }
+  /* Get the keycode. If unknown, discard.
+   */
+  KeySym keysym=XkbKeycodeToKeysym(wm_x11.dpy,evt->keycode,0,0);
+  if (!keysym) return 0;
+  int keycode=wm_x11_usb_usage_from_keysym((int)keysym);
+  if (!keycode) return 0;
   
-  /* Pass text if press or repeat, and text can be acquired. */
-  if (wm_x11.delegate.cb_text) {
+  /* With nonzero value, look up the codepoint.
+   * Best effort. eg F1 doesn't have a codepoint, it's not supposed to.
+   */
+  int codepoint=0;
+  if (value) {
     int shift=(evt->state&ShiftMask)?1:0;
     KeySym tkeysym=XkbKeycodeToKeysym(wm_x11.dpy,evt->keycode,0,shift);
     if (shift&&!tkeysym) { // If pressing shift makes this key "not a key anymore", fuck that and pretend shift is off
       tkeysym=XkbKeycodeToKeysym(wm_x11.dpy,evt->keycode,0,0);
     }
     if (tkeysym) {
-      int codepoint=wm_x11_codepoint_from_keysym(tkeysym);
-      if (codepoint && (evt->type == KeyPress || evt->type == KeyRepeat)) {
-        wm_x11.delegate.cb_text(codepoint);
-      }
+      codepoint=wm_x11_codepoint_from_keysym(tkeysym);
     }
   }
   
+  wm_x11.delegate.cb_key(keycode,value,codepoint);
   return 0;
 }
 

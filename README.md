@@ -36,7 +36,7 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - [ ] Widgets.
 - - [x] Packer.
 - - [ ] Label.
-- - [ ] Button.
+- - [x] Button.
 - - [ ] Text field.
 - - [ ] Checkbox.
 - - [x] Scroller. XXX All widgets have this capability.
