@@ -13,7 +13,7 @@ src/lib: Unconditional units included in the library.
 This project will build `libfife` and also `fifet`, our text editor.
 I'm thinking the vast majority of the text editor's functionality will be implemented by `libfife`, so the actual app layer is thin enough to just ride along.
 
-Once `fifet` works, I'll being a new project `piccolo`, an image editor.
+Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 
 ## TODO
 
@@ -22,20 +22,22 @@ Once `fifet` works, I'll being a new project `piccolo`, an image editor.
 - [ ] Window Manager abstraction.
 - - [ ] Copy/paste. Find an interface amenable to all particpants.
 - [ ] Generic widget.
+- - [ ] Events.
+- - [ ] Focus ring.
 - [ ] Window Manager implementations.
 - - [x] X11
 - - [ ] Wayland
 - - [ ] MacOS
 - - [ ] MS Windows
 - [ ] Text rendering.
-- [ ] Generic widget framework.
+- - [ ] Tofu.
 - [ ] Widgets.
 - - [ ] Packer.
 - - [ ] Label.
 - - [ ] Button.
 - - [ ] Text field.
 - - [ ] Checkbox.
-- - [ ] Scroller.
+- - [x] Scroller. XXX All widgets have this capability.
 - - [ ] Text editor.
 - - [ ] Dialogue.
 - - [ ] File dialogue.

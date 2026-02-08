@@ -13,7 +13,7 @@ void gui_cb_close() {
  */
  
 void gui_cb_resize(int w,int h) {
-  fprintf(stderr,"%s %d,%d\n",__func__,w,h);
+  //fprintf(stderr,"%s %d,%d\n",__func__,w,h);
   if ((w<1)||(h<1)) return;
   if ((w==gui_global_context->w)&&(h==gui_global_context->h)) return;
   gui_global_context->w=w;
@@ -37,7 +37,7 @@ void gui_cb_focus(int focus) {
  */
  
 void gui_cb_expose(int x,int y,int w,int h) {
-  fprintf(stderr,"%s %d,%d,%d,%d\n",__func__,x,y,w,h);
+  //fprintf(stderr,"%s %d,%d,%d,%d\n",__func__,x,y,w,h);
   struct widget *root=gui_global_context->root;
   if (!root) return;
   // Playing it dumb for now, and redraw the whole window on every exposure event.
@@ -76,7 +76,7 @@ void gui_cb_text(int codepoint) {
  */
  
 void gui_cb_mmotion(int x,int y) {
-  fprintf(stderr,"%s %d,%d\n",__func__,x,y);
+  //fprintf(stderr,"%s %d,%d\n",__func__,x,y);
 }
 
 /* Mouse button. 1,2,3 = left,right,center.

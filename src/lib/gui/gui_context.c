@@ -12,10 +12,19 @@ struct gui_context *gui_get_context() {
 /* Delete.
  */
  
+static void font_entry_cleanup(struct font_entry *entry) {
+  if (entry->name) free(entry->name);
+  font_del(entry->font);
+}
+ 
 void gui_context_del(struct gui_context *ctx) {
   if (!ctx) return;
   wm_quit();
   widget_del(ctx->root);
+  if (ctx->fontv) {
+    while (ctx->fontc-->0) font_entry_cleanup(ctx->fontv+ctx->fontc);
+    free(ctx->fontv);
+  }
   free(ctx);
   if (ctx==gui_global_context) gui_global_context=0;
 }
@@ -125,4 +134,57 @@ struct widget *gui_context_create_root(
   widget->w=ctx->w;
   widget->h=ctx->h;
   return widget;
+}
+
+/* Font repository.
+ */
+ 
+struct font *gui_get_default_font(struct gui_context *ctx) {
+  if (!ctx) return 0;
+  if (ctx->fontc<1) return gui_get_named_font(ctx,"font_bold_g0_8x16",-1);//TODO
+  return ctx->fontv[0].font;
+}
+
+struct font *gui_get_named_font(struct gui_context *ctx,const char *name,int namec) {
+  if (!ctx) return 0;
+  if (!name) return 0;
+  if (namec<0) { namec=0; while (name[namec]) namec++; }
+  if (!namec) return 0;
+  
+  struct font_entry *entry=ctx->fontv;
+  int i=ctx->fontc;
+  for (;i-->0;entry++) {
+    if (entry->namec!=namec) continue;
+    if (memcmp(entry->name,name,namec)) continue;
+    return entry->font;
+  }
+  
+  if (ctx->fontc>=ctx->fonta) {
+    int na=ctx->fonta+8;
+    if (na>INT_MAX/sizeof(struct font_entry)) return 0;
+    void *nv=realloc(ctx->fontv,sizeof(struct font_entry)*na);
+    if (!nv) return 0;
+    ctx->fontv=nv;
+    ctx->fonta=na;
+  }
+  
+  char path[1024];
+  int pathc=snprintf(path,sizeof(path),"src/lib/gui/img/%.*s.png",namec,name);//TODO
+  if ((pathc<1)||(pathc>=sizeof(path))) return 0;
+  struct font *font=font_new_from_path(path);
+  if (!font) return 0;
+  
+  char *nname=malloc(namec+1);
+  if (!nname) {
+    font_del(font);
+    return 0;
+  }
+  memcpy(nname,name,namec);
+  nname[namec]=0;
+  
+  entry=ctx->fontv+ctx->fontc++;
+  entry->name=nname;
+  entry->namec=namec;
+  entry->font=font;
+  return font;
 }

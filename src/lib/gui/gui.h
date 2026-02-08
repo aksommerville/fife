@@ -13,6 +13,9 @@ struct gui_delegate;
 struct widget;
 struct widget_type;
 struct image;
+struct font;
+
+#include "standard_widgets.h"
 
 /* Context.
  * Only one context may be live at a time.
@@ -44,6 +47,13 @@ int gui_main(struct gui_context *ctx);
 struct gui_context *gui_get_context();
 
 void gui_terminate_soon(struct gui_context *ctx,int status);
+
+/* The GUI context serves as a font respository, since they have to go somewhere.
+ * These are WEAK, and they will live as long as the context.
+ * If you load a named font first, it becomes the default.
+ */
+struct font *gui_get_default_font(struct gui_context *ctx);
+struct font *gui_get_named_font(struct gui_context *ctx,const char *name,int namec);
 
 /* Generic widget.
  *******************************************************************/

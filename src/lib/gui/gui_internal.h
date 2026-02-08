@@ -4,6 +4,7 @@
 #include "gui.h"
 #include "lib/wm/wm.h"
 #include "lib/image/image.h"
+#include "lib/font/font.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,14 @@ struct gui_context {
   int w,h; // From window manager.
   struct widget *root;
   int render_soon;
+  
+  // First in the list is our default.
+  struct font_entry {
+    char *name;
+    int namec;
+    struct font *font;
+  } *fontv;
+  int fontc,fonta;
 };
 
 extern struct gui_context *gui_global_context;

@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <signal.h>
 
-static struct font *font=0;
-
 static volatile int sigc=0;
 static void rcvsig(int sigid) {
   switch (sigid) {
@@ -36,7 +34,7 @@ static int _colorbox_init(struct widget *widget,const void *args,int argslen) {
 static void _colorbox_render(struct widget *widget,struct image *dst) {
   image_fill_rect(dst,0,0,widget->w,widget->h,WIDGET->color);
   image_fill_rect(dst,widget->w-10,widget->h-10,10,10,0xffffffff);
-  font_render_string(dst,0,0,font,"Hello cruel world!",-1);
+  font_render_string(dst,0,0,gui_get_default_font(widget->ctx),"Hello cruel world!",-1);
   widget_render_children(widget,dst);
 }
 
@@ -54,13 +52,6 @@ int main(int argc,char **argv) {
 
   signal(SIGINT,rcvsig);
   
-  const char *fontpath="src/lib/gui/img/font_bold_g0_8x16.png";
-  if (!(font=font_new_from_path(fontpath))) {
-    fprintf(stderr,"%s: Failed to load font.\n",fontpath);
-    return 1;
-  }
-  fprintf(stderr,"%s: Loaded font. w=%d h=%d\n",fontpath,font_get_width(font),font_get_height(font));
-  
   struct gui_delegate delegate={
     //TODO
   };
@@ -70,6 +61,7 @@ int main(int argc,char **argv) {
     return 1;
   }
   
+  /*XXX
   uint32_t bgcolor=0x80808080;
   struct widget *root=gui_context_create_root(gui,&widget_type_colorbox,&bgcolor,sizeof(bgcolor));
   if (!root) {
@@ -106,6 +98,15 @@ int main(int argc,char **argv) {
     child->y=100;
     child->w=50;
     child->h=50;
+  }
+  */
+  
+  struct widget_args_textedit args={
+  };
+  struct widget *root=gui_context_create_root(gui,&widget_type_textedit,&args,sizeof(args));
+  if (!root) {
+    fprintf(stderr,"%s: gui_context_create_root(textedit) failed\n",argv[0]);
+    return 1;
   }
   
   int result=gui_main(gui);

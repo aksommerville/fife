@@ -36,6 +36,11 @@ int font_measure_tofu(struct font *font,int codepoint) {
 int font_render_string(struct image *dst,int dstx,int dsty,struct font *font,const char *src,int srcc) {
   if (!font) return 0;
   if (!src) return 0;
+  
+  // A wee optimization: If we can tell the whole row is oob, don't bother.
+  int adjy=dsty+dst->y0;
+  if ((adjy>=dst->h)||(adjy+font->h<=0)) return font_measure_string(font,src,srcc);
+  
   if (srcc<0) { srcc=0; while (src[srcc]) srcc++; }
   int subx=0,srcp=0,err,codepoint;
   while (srcp<srcc) {
