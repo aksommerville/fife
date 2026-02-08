@@ -31,9 +31,17 @@ struct gui_context {
     struct font *font;
   } *fontv;
   int fontc,fonta;
+  
+  // Focus ring.
+  struct widget **focusv; // STRONG
+  int focusc,focusa,focusp;
 };
 
 extern struct gui_context *gui_global_context;
+
+// If the current focus remains in the ring, it will remain focussed.
+// Otherwise we blur the current and focus the first thing in the ring (or nothing, if the ring is empty).
+void gui_rebuild_focus_ring(struct gui_context *ctx);
 
 void gui_cb_close();
 void gui_cb_resize(int w,int h);

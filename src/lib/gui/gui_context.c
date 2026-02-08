@@ -20,13 +20,17 @@ static void font_entry_cleanup(struct font_entry *entry) {
 void gui_context_del(struct gui_context *ctx) {
   if (!ctx) return;
   wm_quit();
+  if (ctx==gui_global_context) gui_global_context=0;
+  if (ctx->focusv) {
+    while (ctx->focusc-->0) widget_del(ctx->focusv[ctx->focusc]);
+    free(ctx->focusv);
+  }
   widget_del(ctx->root);
   if (ctx->fontv) {
     while (ctx->fontc-->0) font_entry_cleanup(ctx->fontv+ctx->fontc);
     free(ctx->fontv);
   }
   free(ctx);
-  if (ctx==gui_global_context) gui_global_context=0;
 }
 
 /* New.
@@ -37,9 +41,11 @@ struct gui_context *gui_context_new(const struct gui_delegate *delegate) {
   
   struct gui_context *ctx=calloc(1,sizeof(struct gui_context));
   if (!ctx) return 0;
+  gui_global_context=ctx;
+  
   if (delegate) ctx->delegate=*delegate;
   if (ctx->delegate.update_rate<1.0) ctx->delegate.update_rate=60.0;
-  gui_global_context=ctx;
+  ctx->focusp=-1;
   
   struct wm_delegate wmdelegate={
     .cb_close=gui_cb_close,
@@ -85,7 +91,7 @@ void gui_render(struct gui_context *ctx) {
     .pixelsize=32,
     .writeable=1,
   };
-  ctx->root->type->render(ctx->root,&image);
+  widget_render(ctx->root,&image);
   wm_framebuffer_dirty(0,0,fbw,fbh);
 }
 
@@ -95,7 +101,9 @@ void gui_render(struct gui_context *ctx) {
 int gui_update(struct gui_context *ctx,double elapsed) {
   if (ctx->tree_changed) {
     ctx->tree_changed=0;
-    //TODO Rebuild focus ring.
+    widget_pack(ctx->root);
+    gui_rebuild_focus_ring(ctx);
+    ctx->render_soon=1;
   }
   if (ctx->render_soon) {
     ctx->render_soon=0;

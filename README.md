@@ -24,6 +24,7 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - [ ] Generic widget.
 - - [ ] Events.
 - - [ ] Focus ring.
+- - [ ] Focus ring should also be responsible for accelerators. And mind that where there's a label+field pair, we need to interact with both.
 - [ ] Window Manager implementations.
 - - [x] X11
 - - - [x] Window is not getting keyboard focus by default. Was that just a fluke? ...seems so. Another run worked fine. We're using the same X11 logic as Egg v2.
@@ -33,7 +34,7 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - [ ] Text rendering.
 - - [ ] Tofu.
 - [ ] Widgets.
-- - [ ] Packer.
+- - [x] Packer.
 - - [ ] Label.
 - - [ ] Button.
 - - [ ] Text field.

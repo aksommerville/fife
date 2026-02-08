@@ -14,6 +14,7 @@ void widget_del(struct widget *widget) {
     while (widget->childc-->0) {
       struct widget *child=widget->childv[widget->childc];
       child->parent=0;
+      child->parentuse=0;
       widget_del(child);
     }
     free(widget->childv);
@@ -109,6 +110,7 @@ int widget_childv_insert(struct widget *parent,int p,struct widget *child) {
   parent->childv[p]=child;
   parent->childc++;
   child->parent=parent;
+  child->parentuse=0;
   parent->ctx->tree_changed=1;
   return 0;
 }
@@ -126,6 +128,7 @@ int widget_childv_remove_at(struct widget *parent,int p) {
   parent->childc--;
   memmove(parent->childv+p,parent->childv+p+1,sizeof(void*)*(parent->childc-p));
   child->parent=0;
+  child->parentuse=0;
   widget_del(child);
   parent->ctx->tree_changed=1;
   return 0;
@@ -232,8 +235,18 @@ void widget_render_children(struct widget *widget,struct image *dst) {
       .x0=x0,
       .y0=y0,
     };
-    child->type->render(child,&sub);
+    widget_render(child,&sub);
   }
+}
+
+/* Render wrapper.
+ */
+ 
+void widget_render(struct widget *widget,struct image *dst) {
+  if (!widget) return;
+  if (widget->type->autorender&&widget->bgcolor) image_fill_rect(dst,0,0,widget->w,widget->h,widget->bgcolor);
+  if (widget->type->render) widget->type->render(widget,dst);
+  if (widget->type->autorender) widget_render_children(widget,dst);
 }
 
 /* Measure.

@@ -15,6 +15,7 @@ struct widget_type;
 struct image;
 struct font;
 
+#include <stdint.h>
 #include "standard_widgets.h"
 
 /* Context.
@@ -62,6 +63,17 @@ struct font *gui_get_named_font(struct gui_context *ctx,const char *name,int nam
  */
 int gui_update(struct gui_context *ctx,double elapsed);
 
+/* Change or query keyboard focus.
+ * These return a WEAK reference to the newly-focussed widget on success.
+ * Exception: gui_focus_widget() with something non-null but invalid, we return null, not the current focus.
+ * next(0) to get the focussed widget without changing anything.
+ * next(-1) or (1) to walk the focus ring.
+ * next(-2) or (2) to focus the first or last widget in the ring.
+ * gui_focus_widget(null) to make nothing focussed, which is a perfectly legal state.
+ */
+struct widget *gui_focus_next(struct gui_context *ctx,int d);
+struct widget *gui_focus_widget(struct gui_context *ctx,struct widget *widget);
+
 /* Generic widget.
  *******************************************************************/
  
@@ -73,9 +85,11 @@ struct widget_type {
   
   /* (dst) is typically a slice of the framebuffer, how we effect clipping.
    * (dst) is already set to (widget)'s bounds, so render yourself at (0,0) in it.
-   * REQUIRED.
+   * Your children will automatically have your scroll applied, but you yourself will not.
+   * Subtract (scrollx,scrolly) if you want to render something scrolled.
    */
   void (*render)(struct widget *widget,struct image *dst);
+  int autorender; // If nonzero, wrapper will automatically render your background color and children.
   
   /* Fill (w,h) with your preferred size.
    * Caller must prepopulate (w,h), and receiver may leave them untouched to accept that.
@@ -106,6 +120,9 @@ struct widget {
   int x,y,w,h; // (x,y) relative to parent.
   int scrollx,scrolly; // My content is offset by so much. These are typically positive if not zero.
   int padx,pady; // Interior padding. Generic pack and measure will use it. If you do those yourself, it's up to you.
+  uint32_t bgcolor; // If nonzero, fill my background with this. (individual render hooks are expected to, and the no-hook default will).
+  int focusable; // Nonzero to accept keyboard focus. Set (ctx->tree_changed) if you change.
+  uint32_t parentuse; // Private field for widget's parent's use only. eg for layout bookkeeping. Resets to zero when reparenting.
 };
 
 void widget_del(struct widget *widget);
@@ -158,11 +175,14 @@ void widget_get_clip(int *x,int *y,int *w,int *h,const struct widget *widget);
 
 /* Render all my child widgets into (dst), which must have (widget)'s bounds.
  * ie this takes exactly the same arguments as the render hook.
+ * It's better to set (type->autorender) and let the wrapper take care of it.
+ * But you might want to render something on top of the kids, in which case you'll need this.
  */
 void widget_render_children(struct widget *widget,struct image *dst);
 
 /* Hook wrappers, possibly with fallback logic if the hook is not implemented.
  */
+void widget_render(struct widget *widget,struct image *dst);
 void widget_measure(int *w,int *h,struct widget *widget,int maxw,int maxh);
 void widget_pack(struct widget *widget);
 
