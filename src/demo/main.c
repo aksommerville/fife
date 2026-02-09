@@ -19,16 +19,12 @@ static void rcvsig(int sigid) {
 
 /* Button callbacks.
  */
- 
-static void cb_1(struct widget *widget,void *userdata) {
-  fprintf(stderr,"Thou hast done well in clicking the button.\n");
-}
 
-static void cb_2(struct widget *widget,void *userdata) {
+static void cb_ok(struct widget *widget,void *userdata) {
   fprintf(stderr,"%s\n",__func__);
 }
 
-static void cb_3(struct widget *widget,void *userdata) {
+static void cb_cancel(struct widget *widget,void *userdata) {
   fprintf(stderr,"%s\n",__func__);
 }
 
@@ -89,28 +85,28 @@ int main(int argc,char **argv) {
     }
   }
   {
-    struct widget_args_button args={
-      .text="Click me!",
+    struct widget_args_field args={
+      .text="Untitled-1",
       .textc=-1,
-      .cb=cb_1,
+    };
+    if (child=widget_spawn(root,&widget_type_field,&args,sizeof(args))) {
+      widget_field_set_selection(child,0,-1);
+    }
+  }
+  {
+    struct widget_args_button args={
+      .text="OK",
+      .textc=-1,
+      .cb=cb_ok,
     };
     if (child=widget_spawn(root,&widget_type_button,&args,sizeof(args))) {
     }
   }
   {
     struct widget_args_button args={
-      .text="No, me!",
+      .text="Cancel",
       .textc=-1,
-      .cb=cb_2,
-    };
-    if (child=widget_spawn(root,&widget_type_button,&args,sizeof(args))) {
-    }
-  }
-  {
-    struct widget_args_button args={
-      .text="Click somebody else.",
-      .textc=-1,
-      .cb=cb_3,
+      .cb=cb_cancel,
     };
     if (child=widget_spawn(root,&widget_type_button,&args,sizeof(args))) {
     }

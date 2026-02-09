@@ -23,7 +23,7 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - - [ ] Copy/paste. Find an interface amenable to all particpants.
 - [ ] Generic widget.
 - - [ ] Events.
-- - [ ] Focus ring.
+- - [x] Focus ring.
 - - [ ] Focus ring should also be responsible for accelerators. And mind that where there's a label+field pair, we need to interact with both.
 - [ ] Window Manager implementations.
 - - [x] X11
@@ -35,7 +35,7 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - - [ ] Tofu.
 - [ ] Widgets.
 - - [x] Packer.
-- - [ ] Label.
+- - [x] Label.
 - - [x] Button.
 - - [ ] Text field.
 - - [ ] Checkbox.
