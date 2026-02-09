@@ -64,6 +64,7 @@ double gui_clock_tick(struct gui_clock *clock) {
   }
   
   double elapsed=now-clock->prevtime;
+  clock->prevtime=now;
   clock->nexttime+=clock->period;
   clock->framec++;
   return elapsed;

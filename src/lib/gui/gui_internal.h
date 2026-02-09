@@ -40,6 +40,19 @@ struct gui_context {
   struct widget *track; // STRONG
   int track_in;
   int mx,my;
+  
+  // Deferred tasks.
+  double totalclock;
+  struct deferred {
+    double when; // Against (totalclock).
+    int taskid; // >0, unique
+    struct widget *widget; // STRONG
+    void (*cb)(struct widget *widget,void *userdata);
+    void (*cb_cleanup)(struct widget *widget,void *userdata);
+    void *userdata;
+  } *deferredv;
+  int deferredc,deferreda;
+  int taskid_next;
 };
 
 extern struct gui_context *gui_global_context;

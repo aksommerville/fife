@@ -10,6 +10,7 @@ struct widget_button {
   int stringw,stringh;
   int focus;
   int tracking;
+  int flash;
   void (*cb)(struct widget *widget,void *userdata);
   void *userdata;
 };
@@ -60,7 +61,8 @@ static void _button_measure(int *w,int *h,struct widget *widget,int maxw,int max
 static void _button_render(struct widget *widget,struct image *dst) {
 
   // Change background color while tracking.
-  if (WIDGET->tracking) {
+  int reversecolor=(WIDGET->tracking||WIDGET->flash);
+  if (reversecolor) {
     image_fill_rect(dst,0,0,widget->w,widget->h,0x20202020);
   }
   
@@ -68,7 +70,7 @@ static void _button_render(struct widget *widget,struct image *dst) {
   if (WIDGET->textc) {
     int stringx=(widget->w>>1)-(WIDGET->stringw>>1);
     int stringy=(widget->h>>1)-(WIDGET->stringh>>1)+EXTRA_PAD_TOP;
-    font_set_color_normal(WIDGET->font,WIDGET->tracking?0xffffffff:0x00000000);
+    font_set_color_normal(WIDGET->font,reversecolor?0xffffffff:0x00000000);
     font_render_string(dst,stringx,stringy,WIDGET->font,WIDGET->text,WIDGET->textc);
   }
   
@@ -89,10 +91,24 @@ static void _button_focus(struct widget *widget,int focus) {
   widget->ctx->render_soon=1;
 }
 
+/* Unflash.
+ */
+ 
+static void button_cb_unflash(struct widget *widget,void *userdata) {
+  if (!WIDGET->flash) return;
+  WIDGET->flash=0;
+  widget->ctx->render_soon=1;
+}
+
 /* Activate.
  */
  
 static void _button_activate(struct widget *widget) {
+  if (!WIDGET->tracking) {
+    WIDGET->flash=1;
+    widget->ctx->render_soon=1;
+    int taskid=gui_defer_widget_task(widget,0.150,button_cb_unflash,0);
+  }
   if (WIDGET->cb) WIDGET->cb(widget,WIDGET->userdata);
 }
 
@@ -100,7 +116,6 @@ static void _button_activate(struct widget *widget) {
  */
  
 static int _button_track(struct widget *widget,int state) {
-  fprintf(stderr,"%s %d\n",__func__,state);
   switch (state) {
     case GUI_TRACK_BEGIN:
     case GUI_TRACK_REENTER: {
@@ -113,9 +128,10 @@ static int _button_track(struct widget *widget,int state) {
       } return 0;
     case GUI_TRACK_END_OUT: return 0;
     case GUI_TRACK_END_IN: {
+        _button_activate(widget);
         WIDGET->tracking=0;
         widget->ctx->render_soon=1;
-      } return 0; // 1 to suppress default activation. But let that happen.
+      } return 1;
   }
   return 0;
 }

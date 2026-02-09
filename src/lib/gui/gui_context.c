@@ -21,6 +21,15 @@ void gui_context_del(struct gui_context *ctx) {
   if (!ctx) return;
   wm_quit();
   if (ctx==gui_global_context) gui_global_context=0;
+  if (ctx->deferredv) {
+    struct deferred *deferred=ctx->deferredv+ctx->deferredc;
+    while (ctx->deferredc-->0) {
+      deferred--;
+      if (deferred->cb_cleanup) deferred->cb_cleanup(deferred->widget,deferred->userdata);
+      widget_del(deferred->widget);
+    }
+    free(ctx->deferredv);
+  }
   if (ctx->focusv) {
     while (ctx->focusc-->0) widget_del(ctx->focusv[ctx->focusc]);
     free(ctx->focusv);
@@ -96,10 +105,33 @@ void gui_render(struct gui_context *ctx) {
   wm_framebuffer_dirty(0,0,fbw,fbh);
 }
 
+/* Any deferred ready to run, run and remove it.
+ */
+ 
+static int gui_check_deferred_tasks(struct gui_context *ctx) {
+  /* Careful here. Do not keep a pointer to the list, iterate backward, and remove the entry before calling it.
+   * New entries go on the back, regardless of timestamps, so it's safe to iterate even when new things are being added.
+   */
+  int i=ctx->deferredc;
+  while (i-->0) {
+    struct deferred *deferred=ctx->deferredv+i;
+    if (deferred->when>ctx->totalclock) continue;
+    struct deferred tmp=*deferred;
+    ctx->deferredc--;
+    memmove(deferred,deferred+1,sizeof(struct deferred)*(ctx->deferredc-i));
+    tmp.cb(tmp.widget,tmp.userdata);
+    if (tmp.cb_cleanup) tmp.cb_cleanup(tmp.widget,tmp.userdata);
+    widget_del(tmp.widget);
+  }
+  return 0;
+}
+
 /* Routine update.
  */
  
 int gui_update(struct gui_context *ctx,double elapsed) {
+  ctx->totalclock+=elapsed;
+  if (gui_check_deferred_tasks(ctx)<0) return -1;
   if (ctx->tree_changed) {
     ctx->tree_changed=0;
     widget_pack(ctx->root);
@@ -216,4 +248,65 @@ struct font *gui_get_named_font(struct gui_context *ctx,const char *name,int nam
   entry->namec=namec;
   entry->font=font;
   return font;
+}
+
+/* Schedule deferred task.
+ */
+ 
+int gui_defer_widget_task(struct widget *widget,double delay_s,void (*cb)(struct widget *widget,void *userdata),void *userdata) {
+  if (!widget||!widget->ctx||!cb) return -1;
+  if (delay_s<0.0) delay_s=0.0; // Zero is fine (I guess even negative would be). That means "defer to the next cycle", a sane thing to ask.
+  else if (delay_s>60.0) return -1; // ...but we're not delaying all day. 60 seconds is ridiculous.
+  if (widget->ctx->deferredc>=widget->ctx->deferreda) {
+    int na=widget->ctx->deferreda+8;
+    if (na>INT_MAX/sizeof(struct deferred)) return -1;
+    void *nv=realloc(widget->ctx->deferredv,sizeof(struct deferred)*na);
+    if (!nv) return -1;
+    widget->ctx->deferredv=nv;
+    widget->ctx->deferreda=na;
+  }
+  if (widget_ref(widget)<0) return -1;
+  struct deferred *deferred=widget->ctx->deferredv+widget->ctx->deferredc++;
+  memset(deferred,0,sizeof(struct deferred));
+  deferred->widget=widget;
+  deferred->when=widget->ctx->totalclock+delay_s;
+  deferred->cb=cb;
+  deferred->userdata=userdata;
+  if (widget->ctx->taskid_next<1) widget->ctx->taskid_next=1;
+  deferred->taskid=widget->ctx->taskid_next++;
+  return deferred->taskid;
+}
+
+/* Cancel deferred task.
+ */
+
+void gui_cancel_task(struct gui_context *ctx,int taskid) {
+  if (!ctx) return;
+  if (taskid<1) return;
+  struct deferred *deferred=ctx->deferredv;
+  int i=0;
+  for (;i<ctx->deferredc;i++,deferred++) {
+    if (deferred->taskid!=taskid) continue;
+    struct deferred tmp=*deferred;
+    ctx->deferredc--;
+    memmove(deferred,deferred+1,sizeof(struct deferred)*(ctx->deferredc-i));
+    if (tmp.cb_cleanup) tmp.cb_cleanup(tmp.widget,tmp.userdata);
+    widget_del(tmp.widget);
+    return;
+  }
+}
+
+/* Set task cleanup.
+ */
+ 
+int gui_set_task_cleanup(struct gui_context *ctx,int taskid,void (*cb_cleanup)(struct widget *widget,void *userdata)) {
+  if (!ctx) return -1;
+  struct deferred *deferred=ctx->deferredv;
+  int i=ctx->deferredc;
+  for (;i-->0;deferred++) {
+    if (deferred->taskid!=taskid) continue;
+    deferred->cb_cleanup=cb_cleanup;
+    return 0;
+  }
+  return -1;
 }

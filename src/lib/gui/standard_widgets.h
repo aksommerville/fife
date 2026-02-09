@@ -44,6 +44,22 @@ int widget_button_set_font(struct widget *widget,struct font *font);
 int widget_button_set_text(struct widget *widget,const char *src,int srcc);
 int widget_button_set_callback(struct widget *widget,void (*cb)(struct widget *widget,void *userdata),void *userdata);
 
+/* label: Static text.
+ ****************************************************************************/
+ 
+extern const struct widget_type widget_type_label;
+ 
+struct widget_args_label {
+  struct font *font;
+  const char *text;
+  int textc;
+  uint32_t fgcolor;
+};
+
+int widget_label_set_text(struct widget *widget,const char *src,int srcc);
+int widget_label_set_font(struct widget *widget,struct font *font);
+int widget_label_set_fgcolor(struct widget *widget,uint32_t fgcolor);
+
 /* textedit: Edit text with scrolling.
  ********************************************************************************/
  

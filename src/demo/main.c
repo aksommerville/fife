@@ -75,9 +75,18 @@ int main(int argc,char **argv) {
       fprintf(stderr,"%s: Failed to create root widget.\n",argv[0]);
       return 1;
     }
-    root->bgcolor=0x80808080;
+    root->bgcolor=0x40404040;
     root->padx=5;
     root->pady=5;
+  }
+  {
+    struct widget_args_label args={
+      .text="What is your name?",
+      .textc=-1,
+      .fgcolor=0xffffffff,
+    };
+    if (child=widget_spawn(root,&widget_type_label,&args,sizeof(args))) {
+    }
   }
   {
     struct widget_args_button args={

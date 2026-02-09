@@ -50,3 +50,4 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - - [ ] Image.
 - [ ] Plugin framework. WAMR?
 - [ ] 15-pixel font. (15 significant pixels; probly more like 20 with descenders)
+- [ ] Embed a few standard fonts in the library, but do preserve ability to load from a file.

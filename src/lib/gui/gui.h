@@ -88,6 +88,14 @@ uint8_t gui_get_modifiers(const struct gui_context *ctx);
 #define GUI_MOD_ALT (GUI_MOD_LALT|GUI_MOD_RALT)
 #define GUI_MOD_SUPER (GUI_MOD_LSUPER|GUI_MOD_RSUPER)
 
+/* Schedule a callback at least as far out as the next update cycle.
+ * Context retains (widget) for you.
+ * Optionally add a (cb_cleanup) to any task, guaranteed to be called eventually. Either right after regular (cb), or during cancellation.
+ */
+int gui_defer_widget_task(struct widget *widget,double delay_s,void (*cb)(struct widget *widget,void *userdata),void *userdata);
+void gui_cancel_task(struct gui_context *ctx,int taskid);
+int gui_set_task_cleanup(struct gui_context *ctx,int taskid,void (*cb_cleanup)(struct widget *widget,void *userdata));
+
 /* Generic widget.
  *******************************************************************/
  
