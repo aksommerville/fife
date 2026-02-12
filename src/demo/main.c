@@ -145,6 +145,7 @@ int main(int argc,char **argv) {
       };
       struct widget *lbl=widget_spawn(row,&widget_type_label,&lblargs,sizeof(lblargs));
       widget_packer_flex_child(row,chk,-1);
+      widget_set_proxy(lbl,chk);
     }
   }
   /**/

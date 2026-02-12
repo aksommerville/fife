@@ -99,8 +99,12 @@ static struct widget *gui_find_track_widget(struct widget *widget,int x,int y) {
     struct widget *found=gui_find_track_widget(child,x,y);
     if (found) return found;
   }
-  if (!widget->clickable) return 0;
-  return widget;
+  if (widget->proxyto) {
+    if (widget->proxyto->parent&&widget->proxyto->clickable) return widget;
+  } else {
+    if (widget->clickable) return widget;
+  }
+  return 0;
 }
 
 /* Find the innermost widget that supports raw mouse events, at the given point.
@@ -115,8 +119,12 @@ static struct widget *gui_find_mouse_widget(struct widget *widget,int x,int y) {
     struct widget *found=gui_find_mouse_widget(child,x,y);
     if (found) return found;
   }
-  if (!widget->rawmouse) return 0;
-  return widget;
+  if (widget->proxyto) {
+    if (widget->proxyto->parent&&widget->proxyto->rawmouse) return widget;
+  } else {
+    if (widget->rawmouse) return widget;
+  }
+  return 0;
 }
 
 /* Mouse motion, client coords.
@@ -130,14 +138,15 @@ void gui_cb_mmotion(int x,int y) {
   
   // Tracking?
   if (ctx->track) {
+    struct widget *target=ctx->track->proxyto?ctx->track->proxyto:ctx->track;
     if (widget_point_in_bounds(ctx->track,x,y)) {
       if (!ctx->track_in) {
-        ctx->track->type->track(ctx->track,GUI_TRACK_REENTER);
+        target->type->track(target,GUI_TRACK_REENTER);
         ctx->track_in=1;
       }
     } else {
       if (ctx->track_in) {
-        ctx->track->type->track(ctx->track,GUI_TRACK_EXIT);
+        target->type->track(target,GUI_TRACK_EXIT);
         ctx->track_in=0;
       }
     }
@@ -146,7 +155,8 @@ void gui_cb_mmotion(int x,int y) {
   } else {
     struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
     while (hover) {
-      if (hover->rawmouse&&hover->type->mmotion&&hover->type->mmotion(hover,ctx->mx,ctx->my)) break;
+      struct widget *target=hover->proxyto?hover->proxyto:hover;
+      if (target->rawmouse&&target->type->mmotion&&target->type->mmotion(target,ctx->mx,ctx->my)) break;
       hover=hover->parent;
     }
   }
@@ -167,15 +177,16 @@ void gui_cb_mbutton(int btnid,int value) {
    */
   if (ctx->track&&(btnid==1)) {
     if (value) return; // Huh? I thought it was already pressed.
+    struct widget *target=ctx->track->proxyto?ctx->track->proxyto:ctx->track;
     if (ctx->track_in) {
-      int ack=ctx->track->type->track(ctx->track,GUI_TRACK_END_IN);
+      int ack=target->type->track(target,GUI_TRACK_END_IN);
       if (!ack) {
-        if (ctx->track->type->activate) {
-          ctx->track->type->activate(ctx->track);
+        if (target->type->activate) {
+          target->type->activate(target);
         }
       }
     } else {
-      ctx->track->type->track(ctx->track,GUI_TRACK_END_OUT);
+      target->type->track(target,GUI_TRACK_END_OUT);
     }
     widget_del(ctx->track);
     ctx->track=0;
@@ -187,12 +198,13 @@ void gui_cb_mbutton(int btnid,int value) {
   if ((btnid==1)&&value) {
     struct widget *track=gui_find_track_widget(ctx->root,ctx->mx,ctx->my);
     if (track) {
-      int ack=track->type->track(track,GUI_TRACK_BEGIN);
+      struct widget *target=track->proxyto?track->proxyto:track;
+      int ack=target->type->track(target,GUI_TRACK_BEGIN);
       if (ack) {
         if (widget_ref(track)<0) return;
         ctx->track=track;
         ctx->track_in=1;
-        if (track->focusable) gui_focus_widget(ctx,track);
+        if (target->focusable) gui_focus_widget(ctx,target);
         return;
       }
     }
@@ -202,7 +214,8 @@ void gui_cb_mbutton(int btnid,int value) {
    */
   struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
   while (hover) {
-    if (hover->rawmouse&&hover->type->mbutton&&hover->type->mbutton(hover,btnid,value,ctx->mx,ctx->my)) break;
+    struct widget *target=hover->proxyto?hover->proxyto:hover;
+    if (target->rawmouse&&target->type->mbutton&&target->type->mbutton(target,btnid,value,ctx->mx,ctx->my)) break;
     hover=hover->parent;
   }
 }
@@ -215,7 +228,8 @@ void gui_cb_mwheel(int dx,int dy) {
   if (!ctx) return;
   struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
   while (hover) {
-    if (hover->rawmouse&&hover->type->mwheel&&hover->type->mwheel(hover,dx,dy,ctx->mx,ctx->my)) break;
+    struct widget *target=hover->proxyto?hover->proxyto:hover;
+    if (target->rawmouse&&target->type->mwheel&&target->type->mwheel(target,dx,dy,ctx->mx,ctx->my)) break;
     hover=hover->parent;
   }
 }

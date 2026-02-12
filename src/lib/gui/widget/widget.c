@@ -10,6 +10,10 @@ void widget_del(struct widget *widget) {
     "%s:%d:WARNING: Deleting widget %p (%s), parent==%p. Must be null by this point.\n",
     __FILE__,__LINE__,widget,widget->type->name,widget->parent
   );
+  if (widget->proxyto) {
+    widget_del(widget->proxyto);
+    widget->proxyto=0;
+  }
   if (widget->childv) {
     while (widget->childc-->0) {
       struct widget *child=widget->childv[widget->childc];
@@ -307,4 +311,16 @@ void widget_pack(struct widget *widget) {
       widget_pack(child);
     }
   }
+}
+
+/* Set proxy.
+ */
+ 
+int widget_set_proxy(struct widget *proxy,struct widget *target) {
+  if (!proxy) return -1;
+  if (proxy->proxyto==target) return 0;
+  if (target&&(widget_ref(target)<0)) return -1;
+  widget_del(proxy->proxyto);
+  proxy->proxyto=target;
+  return 0;
 }

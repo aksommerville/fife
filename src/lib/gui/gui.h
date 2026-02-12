@@ -175,6 +175,7 @@ struct widget {
   int clickable; // Nonzero to enable click-and-track from the mouse.
   int rawmouse; // Nonzero to receive mmotion, mbutton, and mwheel events when the mouse is hovering.
   uint32_t parentuse; // Private field for widget's parent's use only. eg for layout bookkeeping. Resets to zero when reparenting.
+  struct widget *proxyto; // STRONG,OPTIONAL. If set, events striking this widget will go to (proxyto) instead. eg I'm a label and it's a field.
 };
 
 void widget_del(struct widget *widget);
@@ -239,6 +240,11 @@ void widget_render_children(struct widget *widget,struct image *dst);
 void widget_render(struct widget *widget,struct image *dst);
 void widget_measure(int *w,int *h,struct widget *widget,int maxw,int maxh);
 void widget_pack(struct widget *widget);
+
+/* Make (proxy) set its track, key, and focus events to (target).
+ * Typically (proxy) is a label, and (target) the control it labels.
+ */
+int widget_set_proxy(struct widget *proxy,struct widget *target);
 
 /* Timing regulator, used by gui_main().
  *************************************************************************/
