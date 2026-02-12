@@ -18,6 +18,7 @@
 
 struct font;
 struct image;
+struct text_encoding;
 
 void font_del(struct font *font);
 int font_ref(struct font *font);
@@ -25,8 +26,8 @@ int font_ref(struct font *font);
 /* We will digest and copy (image), you can free it once the font is instantiated.
  * We can only read from a path if the "fs" and "png" units are present.
  */
-struct font *font_new(struct image *image);
-struct font *font_new_from_path(const char *path);
+struct font *font_new(struct image *image,const struct text_encoding *encoding);
+struct font *font_new_from_path(const char *path,const struct text_encoding *encoding);
 
 /* Retrieve size of one glyph.
  */
@@ -47,13 +48,6 @@ void font_set_color_normal(struct font *font,uint32_t color);
 void font_set_color_missing(struct font *font,uint32_t color);
 void font_set_color_misencode(struct font *font,uint32_t color);
 
-/* By default we expect UTF-8.
- * Any other encoding, you must provide a no-context decoder.
- * Decoder returns the length of the sequence, and puts its Unicode codepoint in (*codepoint).
- * If the decoder returns <=0, we consume one byte and print it as "misencoded".
- */
-void font_set_decoder(struct font *font,int (*decode)(int *codepoint,const char *src,int srcc));
-
 /* How wide will this be if you give it to font_render_string?
  * Usually (srcc*glyph_width), but we do account for tofu.
  */
@@ -68,9 +62,5 @@ int font_measure_tofu(struct font *font,int codepoint);
  * Returns horizontal advancement.
  */
 int font_render_string(struct image *dst,int dstx,int dsty,struct font *font,const char *src,int srcc);
-
-/* Since we need it internally, might as well expose our UTF-8 decoder.
- */
-int font_utf8_decode(int *codepoint,const char *src,int srcc);
 
 #endif

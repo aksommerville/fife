@@ -5,6 +5,7 @@
 #include "lib/wm/wm.h"
 #include "lib/image/image.h"
 #include "lib/font/font.h"
+#include "lib/text/text.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +21,7 @@ struct gui_context {
   volatile int terminate; // Per WM or client request.
   int termstatus;
   int w,h; // From window manager.
+  const struct text_encoding *encoding;
   struct widget *root;
   int render_soon;
   int tree_changed; // Widgets set nonzero any time a widget is added, removed, or order changed.

@@ -56,6 +56,7 @@ struct gui_context *gui_context_new(const struct gui_delegate *delegate) {
   if (delegate) ctx->delegate=*delegate;
   if (ctx->delegate.update_rate<1.0) ctx->delegate.update_rate=60.0;
   ctx->focusp=-1;
+  ctx->encoding=&text_encoding_utf8;
   
   struct wm_delegate wmdelegate={
     .cb_close=gui_cb_close,
@@ -232,7 +233,7 @@ struct font *gui_get_named_font(struct gui_context *ctx,const char *name,int nam
   char path[1024];
   int pathc=snprintf(path,sizeof(path),"src/lib/gui/img/%.*s.png",namec,name);//TODO
   if ((pathc<1)||(pathc>=sizeof(path))) return 0;
-  struct font *font=font_new_from_path(path);
+  struct font *font=font_new_from_path(path,ctx->encoding);
   if (!font) return 0;
   
   char *nname=malloc(namec+1);

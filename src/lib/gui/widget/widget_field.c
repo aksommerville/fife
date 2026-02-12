@@ -243,27 +243,6 @@ int widget_field_set_selection(struct widget *widget,int p,int c) {
   return 0;
 }
 
-/* Push (selp) in the direction of (dx) until it lands on a UTF-8 sequence boundary.
- * TODO I guess this need to coordinate with font, so we assume boundaries in the same places?
- */
- 
-static void widget_field_force_legal_selp(struct widget *widget,int dx) {
-  if (WIDGET->selp<0) WIDGET->selp=0;
-  else if (WIDGET->selp>WIDGET->textc) WIDGET->selp=WIDGET->textc;
-  if (dx<0) {
-    if (WIDGET->selp>=WIDGET->textc) return;
-    while (WIDGET->selp>0) {
-      if ((WIDGET->text[WIDGET->selp]&0xc0)!=0x80) return;
-      WIDGET->selp--;
-    }
-  } else {
-    while (WIDGET->selp<WIDGET->textc) {
-      if ((WIDGET->text[WIDGET->selp]&0xc0)!=0x80) return;
-      WIDGET->selp++;
-    }
-  }
-}
-
 /* Move cursor.
  */
  
@@ -289,9 +268,12 @@ int widget_field_move_cursor(struct widget *widget,int dx,int dy) {
     }
     WIDGET->selw=-1;
   } else {
-    // No selection. Just move the cursor.
-    WIDGET->selp+=dx;
-    widget_field_force_legal_selp(widget,dx);
+    // No selection. Move the cursor.
+    struct text_decoder decoder={.v=WIDGET->text,.c=WIDGET->textc,.p=WIDGET->selp,.encoding=widget->ctx->encoding};
+    int codepoint;
+    if (dx<0) text_decoder_unread(&codepoint,&decoder);
+    else text_decoder_read(&codepoint,&decoder);
+    WIDGET->selp=decoder.p;
     widget->ctx->render_soon=1;
     WIDGET->selw=-1;
   }
@@ -302,17 +284,17 @@ int widget_field_move_cursor(struct widget *widget,int dx,int dy) {
 /* Delete at cursor.
  */
  
-static int widget_field_delete_selection(struct widget *widget) {
+static int widget_field_delete_selection(struct widget *widget,int with_callbacks) {
   int p=WIDGET->selp;
   int c=WIDGET->selc;
   if (c<0) {
     p+=c;
     c=-c;
   }
-  //TODO cb_preedit
+  //TODO cb_preedit if (with_callbacks)
   WIDGET->textc-=c;
   memmove(WIDGET->text+p,WIDGET->text+p+c,WIDGET->textc-p);
-  //TODO cb_postedit
+  //TODO cb_postedit if (with_callbacks)
   WIDGET->selp=p;
   WIDGET->selc=0;
   WIDGET->selw=-1;
@@ -322,11 +304,13 @@ static int widget_field_delete_selection(struct widget *widget) {
 
 int widget_field_delete(struct widget *widget) {
   if (!widget||(widget->type!=&widget_type_field)) return -1;
-  if (WIDGET->selc) return widget_field_delete_selection(widget);
+  if (WIDGET->selc) return widget_field_delete_selection(widget,1);
   if (WIDGET->selp>=WIDGET->textc) return 0;
-  //TODO Assuming UTF-8 but maybe should be configurable.
-  int rmc=1;
-  while ((WIDGET->selp+rmc<WIDGET->textc)&&((WIDGET->text[WIDGET->selp+rmc]&0xc0)==0x80)) rmc++;
+  struct text_decoder decoder={.v=WIDGET->text,.c=WIDGET->textc,.p=WIDGET->selp,.encoding=widget->ctx->encoding};
+  int codepoint;
+  text_decoder_read(&codepoint,&decoder);
+  int rmc=decoder.p-WIDGET->selp;
+  if (rmc<1) return -1;
   //TODO cb_preedit
   WIDGET->textc-=rmc;
   memmove(WIDGET->text+WIDGET->selp,WIDGET->text+WIDGET->selp+rmc,WIDGET->textc-WIDGET->selp);
@@ -337,11 +321,14 @@ int widget_field_delete(struct widget *widget) {
 
 int widget_field_backspace(struct widget *widget) {
   if (!widget||(widget->type!=&widget_type_field)) return -1;
-  if (WIDGET->selc) return widget_field_delete_selection(widget);
+  if (WIDGET->selc) return widget_field_delete_selection(widget,1);
   if (WIDGET->selp<=0) return 0;
-  //TODO Assuming UTF-8 but maybe should be configurable.
-  int p=WIDGET->selp-1,c=1;
-  while ((p>0)&&((WIDGET->text[p]&0xc0)==0x80)) { p--; c++; }
+  struct text_decoder decoder={.v=WIDGET->text,.c=WIDGET->textc,.p=WIDGET->selp,.encoding=widget->ctx->encoding};
+  int codepoint;
+  text_decoder_unread(&codepoint,&decoder);
+  int p=decoder.p;
+  int c=WIDGET->selp-p;
+  if (c<1) return -1;
   //TODO cb_preedit
   WIDGET->textc-=c;
   memmove(WIDGET->text+p,WIDGET->text+p+c,WIDGET->textc-p);
@@ -357,56 +344,27 @@ int widget_field_backspace(struct widget *widget) {
  
 int widget_field_insert_codepoint(struct widget *widget,int codepoint) {
   if (!widget||(widget->type!=&widget_type_field)) return -1;
-  if (codepoint<0x20) return 0;
-  if ((codepoint>=0x7f)&&(codepoint<0xa0)) return 0;
-  if (codepoint>0x10ffff) return 0;
   
-  //TODO Obviously this needs to live somewhere else.
   char encoded[4];
-  int encodedc;
-  if (codepoint<0x80) {
-    encoded[0]=codepoint;
-    encodedc=1;
-  } else if (codepoint<0x800) {
-    encoded[0]=0xc0|(codepoint>>6);
-    encoded[1]=0x80|(codepoint&0x3f);
-    encodedc=2;
-  } else if (codepoint<0x10000) {
-    encoded[0]=0xe0|(codepoint>>12);
-    encoded[1]=0x80|((codepoint>>6)&0x3f);
-    encoded[2]=0x80|(codepoint&0x3f);
-    encodedc=3;
-  } else if (codepoint<0x10ffff) {
-    encoded[0]=0xf0|(codepoint>>18);
-    encoded[1]=0x80|((codepoint>>12)&0x3f);
-    encoded[2]=0x80|((codepoint>>6)&0x3f);
-    encoded[3]=0x80|(codepoint&0x3f);
-    encodedc=4;
-  } else {
-    return 0;
-  }
+  int encodedc=widget->ctx->encoding->write(encoded,sizeof(encoded),codepoint,widget->ctx->encoding->ctx);
+  if ((encodedc<1)||(encodedc>sizeof(encoded))) return -1;
   
-  if (WIDGET->textc>WIDGET->texta-4) {
-    int na=(WIDGET->texta+1028)&~1023;
-    void *nv=realloc(WIDGET->text,na);
-    if (!nv) return -1;
-    WIDGET->text=nv;
-    WIDGET->texta=na;
-  }
+  //TODO cb_preedit
   
-  if (WIDGET->selc) {
-    //TODO cb_preedit with both the removal and insertion
-    widget_field_delete_selection(widget);
-  } else {
-    //TODO cb_preedit, insertion only
-  }
-  memmove(WIDGET->text+WIDGET->selp+encodedc,WIDGET->text+WIDGET->selp,WIDGET->textc-WIDGET->selp);
-  WIDGET->textc+=encodedc;
-  memcpy(WIDGET->text+WIDGET->selp,encoded,encodedc);
+  struct text_encoder encoder={
+    .v=WIDGET->text,
+    .c=WIDGET->textc,
+    .a=WIDGET->texta,
+    .encoding=widget->ctx->encoding,
+  };
+  if (text_encoder_replace_raw(&encoder,WIDGET->selp,WIDGET->selc,encoded,encodedc)<0) return -1;
+  WIDGET->text=encoder.v;
+  WIDGET->textc=encoder.c;
+  WIDGET->texta=encoder.a;
   WIDGET->selp+=encodedc;
+  WIDGET->selc=0;
   WIDGET->selw=-1;
-  //TODO cb_postedit
-  
   widget->ctx->render_soon=1;
-  return 0;
+  
+  //TODO cb_postedit
 }

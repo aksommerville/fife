@@ -23,8 +23,8 @@ int font_ref(struct font *font) {
 /* New, from image.
  */
 
-struct font *font_new(struct image *image) {
-  if (!image) return 0;
+struct font *font_new(struct image *image,const struct text_encoding *encoding) {
+  if (!image||!encoding) return 0;
   
   // Confirm it produces sane dimensions.
   if ((image->w<1)||(image->w%16)) return 0;
@@ -33,6 +33,7 @@ struct font *font_new(struct image *image) {
   struct font *font=calloc(1,sizeof(struct font));
   if (!font) return 0;
   font->refc=1;
+  font->encoding=encoding;
   
   font->imgw=image->w;
   font->imgh=image->h;
@@ -46,7 +47,6 @@ struct font *font_new(struct image *image) {
   
   font_copy_image(font,image);
   
-  font->decode=font_utf8_decode;
   font->color_normal=0xffffffff;
   font->color_missing=0xff0000ff;
   font->color_misencode=0xff0000ff;
@@ -57,10 +57,10 @@ struct font *font_new(struct image *image) {
 /* New, from path.
  */
  
-struct font *font_new_from_path(const char *path) {
+struct font *font_new_from_path(const char *path,const struct text_encoding *encoding) {
   struct image *image=image_new_from_path(path);
   if (!image) return 0;
-  struct font *font=font_new(image);
+  struct font *font=font_new(image,encoding);
   image_del(image);
   return font;
 }
@@ -91,9 +91,4 @@ void font_set_color_missing(struct font *font,uint32_t color) {
 void font_set_color_misencode(struct font *font,uint32_t color) {
   if (!font) return;
   font->color_misencode=color;
-}
-
-void font_set_decoder(struct font *font,int (*decode)(int *codepoint,const char *src,int srcc)) {
-  if (!font||!decode) return;
-  font->decode=decode;
 }

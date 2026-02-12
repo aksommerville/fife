@@ -3,6 +3,7 @@
 
 #include "font.h"
 #include "lib/image/image.h"
+#include "lib/text/text.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,8 +16,8 @@ struct font {
   uint8_t *img; // A1 big-endian, the way PNG does it.
   int imgw,imgh;
   int imgstride;
-  int (*decode)(int *codepoint,const char *src,int srcc);
   uint32_t color_normal,color_missing,color_misencode;
+  const struct text_encoding *encoding;
   //TODO Whatever bookkeeping we need around the tofu.
 };
 
