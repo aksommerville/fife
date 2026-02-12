@@ -146,7 +146,7 @@ struct widget_type {
   void (*activate)(struct widget *widget);
   
   /* Notify of mouse tracking activity.
-   * On GUI_STATE_BEGIN and GUI_STATE_END_IN, you must return acknowledgement:
+   * On GUI_TRACK_BEGIN and GUI_TRACK_END_IN, you must return acknowledgement:
    * BEGIN: Acknowledge to allow tracking, otherwise we terminate the activity.
    * END_IN: Acknowledge to suppress generic activation.
    */

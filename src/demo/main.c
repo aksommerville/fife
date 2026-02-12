@@ -34,6 +34,10 @@ static int cb_preedit(struct widget *widget,const char *text,int textc,int p,int
   return 0;
 }
 
+static void cb_checkbox(struct widget *widget,int value,void *userdata) {
+  fprintf(stderr,"%s %d\n",__func__,value);
+}
+
 /* Main.
  */
  
@@ -116,6 +120,31 @@ int main(int argc,char **argv) {
       .cb=cb_cancel,
     };
     if (child=widget_spawn(root,&widget_type_button,&args,sizeof(args))) {
+    }
+  }
+  // Our checkboxes are funny, they'll expand to fill the space provided. So put ours in a horizontal packer, with a flexible label.
+  {
+    struct widget_args_packer rowargs={
+      .orientation='x',
+      .majoralign=0,
+      .minoralign=0,
+      .spacing=5,
+    };
+    struct widget *row=widget_spawn(root,&widget_type_packer,&rowargs,sizeof(rowargs));
+    if (row) {
+      struct widget_args_checkbox chkargs={
+        .cb=cb_checkbox,
+        .enable=1,
+        .value=0,
+      };
+      struct widget *chk=widget_spawn(row,&widget_type_checkbox,&chkargs,sizeof(chkargs));
+      struct widget_args_label lblargs={
+        .text="Checked",
+        .textc=-1,
+        .fgcolor=0xffffffff,
+      };
+      struct widget *lbl=widget_spawn(row,&widget_type_label,&lblargs,sizeof(lblargs));
+      widget_packer_flex_child(row,chk,-1);
     }
   }
   /**/

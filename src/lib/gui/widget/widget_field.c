@@ -180,6 +180,9 @@ static int _field_mbutton(struct widget *widget,int btnid,int value,int mx,int m
     return 1;
   }
   
+  // Any click event gives us the focus. This won't happen generically.
+  gui_focus_widget(widget->ctx,widget);
+  
   // Where at?
   widget_coords_local_from_global(&mx,&my,widget);
   int p=font_locate_point(WIDGET->font,WIDGET->text,WIDGET->textc,mx-widget->padx);

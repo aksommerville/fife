@@ -27,7 +27,7 @@ struct widget_args_packer {
  */
 int widget_packer_flex_child(struct widget *widget,struct widget *child,int flex);
 
-/* button: Icon and label in a box you can focus or click.
+/* button: Label in a box you can focus or click.
  *****************************************************************************/
  
 extern const struct widget_type widget_type_button;
@@ -105,5 +105,25 @@ extern const struct widget_type widget_type_textedit;
 struct widget_args_textedit {
   int TODO;
 };
+
+/* checkbox: Button with togglable state.
+ * Should this include a text label? For now I'm sayng no.
+ ************************************************************************/
+ 
+extern const struct widget_type widget_type_checkbox;
+
+struct widget_args_checkbox {
+  void *userdata;
+  void (*cb)(struct widget *widget,int value,void *userdata);
+  int enable; // <--- Must be nonzero if you're providing args, if you want it enabled. No args, enabled by default.
+  int value;
+};
+
+void *widget_checkbox_get_userdata(const struct widget *widget);
+int widget_checkbox_set_userdata(struct widget *widget,void *userdata);
+int widget_checkbox_get_enable(const struct widget *widget);
+int widget_checkbox_set_enable(struct widget *widget,int enable);
+int widget_checkbox_get_value(const struct widget *widget); // 0,1. If you set to some other integer, it becomes 1.
+int widget_checkbox_set_value(struct widget *widget,int value);
 
 #endif

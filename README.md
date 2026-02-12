@@ -39,12 +39,13 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - - [x] Label.
 - - [x] Button.
 - - [x] Text field.
-- - [ ] Checkbox.
+- - [x] Checkbox.
 - - [x] Scroller. XXX All widgets have this capability.
 - - [ ] Text editor.
 - - [ ] Dialogue.
 - - [ ] File dialogue.
 - - [ ] Menu bar.
+- - [ ] Flexible panels. eg files list and editor canvas, with a draggable boundary.
 - [ ] Basic utilities.
 - - [x] Filesystem. As an `opt` unit, in case we port to something exotic.
 - - [x] Serial.
