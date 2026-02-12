@@ -71,10 +71,11 @@ struct widget_args_field {
   int textc;
   void *userdata;
   
-  // Called before making a change. Return <0 to reject the change. (possibly having replaced text yourself).
+  // Called before making a change. Return nonzero to reject the change; we'll try to return the same.
+  // Mind that any changes you make to the widget's text invalidate (before).
   int (*cb_preedit)(struct widget *widget,const char *before,int beforec,int p,int c,const char *incoming,int incomingc);
   
-  // Called after every change.
+  // Called after every change. (text) is the entire text and (editp) is the insertion point after the change.
   void (*cb_postedit)(struct widget *widget,const char *text,int textc,int editp);
 };
 

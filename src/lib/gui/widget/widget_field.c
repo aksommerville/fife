@@ -284,44 +284,62 @@ int widget_field_move_cursor(struct widget *widget,int dx,int dy) {
 /* Delete at cursor.
  */
  
-static int widget_field_delete_selection(struct widget *widget,int with_callbacks) {
+static int widget_field_delete_selection(struct widget *widget) {
   int p=WIDGET->selp;
   int c=WIDGET->selc;
   if (c<0) {
     p+=c;
     c=-c;
   }
-  //TODO cb_preedit if (with_callbacks)
+  
+  if (WIDGET->cb_preedit) {
+    int err=WIDGET->cb_preedit(
+      widget,WIDGET->text,WIDGET->textc,
+      p,c,0,0
+    );
+    if (err) return err;
+  }
+  
   WIDGET->textc-=c;
   memmove(WIDGET->text+p,WIDGET->text+p+c,WIDGET->textc-p);
-  //TODO cb_postedit if (with_callbacks)
   WIDGET->selp=p;
   WIDGET->selc=0;
   WIDGET->selw=-1;
   widget->ctx->render_soon=1;
+  
+  if (WIDGET->cb_postedit) WIDGET->cb_postedit(widget,WIDGET->text,WIDGET->textc,WIDGET->selp);
   return 0;
 }
 
 int widget_field_delete(struct widget *widget) {
   if (!widget||(widget->type!=&widget_type_field)) return -1;
-  if (WIDGET->selc) return widget_field_delete_selection(widget,1);
+  if (WIDGET->selc) return widget_field_delete_selection(widget);
   if (WIDGET->selp>=WIDGET->textc) return 0;
   struct text_decoder decoder={.v=WIDGET->text,.c=WIDGET->textc,.p=WIDGET->selp,.encoding=widget->ctx->encoding};
   int codepoint;
   text_decoder_read(&codepoint,&decoder);
   int rmc=decoder.p-WIDGET->selp;
   if (rmc<1) return -1;
-  //TODO cb_preedit
+  
+  if (WIDGET->cb_preedit) {
+    int err=WIDGET->cb_preedit(
+      widget,WIDGET->text,WIDGET->textc,
+      WIDGET->selp,rmc,0,0
+    );
+    if (err) return err;
+  }
+
   WIDGET->textc-=rmc;
   memmove(WIDGET->text+WIDGET->selp,WIDGET->text+WIDGET->selp+rmc,WIDGET->textc-WIDGET->selp);
-  //TODO cb_postedit
   widget->ctx->render_soon=1;
+  
+  if (WIDGET->cb_postedit) WIDGET->cb_postedit(widget,WIDGET->text,WIDGET->textc,WIDGET->selp);
   return 0;
 }
 
 int widget_field_backspace(struct widget *widget) {
   if (!widget||(widget->type!=&widget_type_field)) return -1;
-  if (WIDGET->selc) return widget_field_delete_selection(widget,1);
+  if (WIDGET->selc) return widget_field_delete_selection(widget);
   if (WIDGET->selp<=0) return 0;
   struct text_decoder decoder={.v=WIDGET->text,.c=WIDGET->textc,.p=WIDGET->selp,.encoding=widget->ctx->encoding};
   int codepoint;
@@ -329,13 +347,22 @@ int widget_field_backspace(struct widget *widget) {
   int p=decoder.p;
   int c=WIDGET->selp-p;
   if (c<1) return -1;
-  //TODO cb_preedit
+  
+  if (WIDGET->cb_preedit) {
+    int err=WIDGET->cb_preedit(
+      widget,WIDGET->text,WIDGET->textc,
+      p,c,0,0
+    );
+    if (err) return err;
+  }
+  
   WIDGET->textc-=c;
   memmove(WIDGET->text+p,WIDGET->text+p+c,WIDGET->textc-p);
   WIDGET->selp=p;
   WIDGET->selw=-1;
-  //TODO cb_postedit
   widget->ctx->render_soon=1;
+  
+  if (WIDGET->cb_postedit) WIDGET->cb_postedit(widget,WIDGET->text,WIDGET->textc,WIDGET->selp);
   return 0;
 }
 
@@ -349,7 +376,14 @@ int widget_field_insert_codepoint(struct widget *widget,int codepoint) {
   int encodedc=widget->ctx->encoding->write(encoded,sizeof(encoded),codepoint,widget->ctx->encoding->ctx);
   if ((encodedc<1)||(encodedc>sizeof(encoded))) return -1;
   
-  //TODO cb_preedit
+  if (WIDGET->cb_preedit) {
+    int err=WIDGET->cb_preedit(
+      widget,WIDGET->text,WIDGET->textc,
+      WIDGET->selp,WIDGET->selc,
+      encoded,encodedc
+    );
+    if (err) return err;
+  }
   
   struct text_encoder encoder={
     .v=WIDGET->text,
@@ -366,5 +400,5 @@ int widget_field_insert_codepoint(struct widget *widget,int codepoint) {
   WIDGET->selw=-1;
   widget->ctx->render_soon=1;
   
-  //TODO cb_postedit
+  if (WIDGET->cb_postedit) WIDGET->cb_postedit(widget,WIDGET->text,WIDGET->textc,WIDGET->selp);
 }

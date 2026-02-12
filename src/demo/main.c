@@ -28,6 +28,15 @@ static void cb_cancel(struct widget *widget,void *userdata) {
   fprintf(stderr,"%s\n",__func__);
 }
 
+static int cb_preedit(struct widget *widget,const char *text,int textc,int p,int c,const char *src,int srcc) {
+  if ((srcc==1)&&(src[0]=='u')) {
+    fprintf(stderr,"U IS FORBIDDEN\n");
+    return 1;
+  }
+  fprintf(stderr,"%s: Replacing '%.*s'(%d@%d) with '%.*s'\n",__func__,c,text+p,c,p,srcc,src);
+  return 0;
+}
+
 /* Main.
  */
  
@@ -88,6 +97,7 @@ int main(int argc,char **argv) {
     struct widget_args_field args={
       .text="Untitled-1",
       .textc=-1,
+      .cb_preedit=cb_preedit,
     };
     if (child=widget_spawn(root,&widget_type_field,&args,sizeof(args))) {
       widget_field_set_selection(child,0,-1);
