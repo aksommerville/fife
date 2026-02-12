@@ -21,6 +21,7 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - [ ] Test framework.
 - [ ] Window Manager abstraction.
 - - [ ] Copy/paste. Find an interface amenable to all particpants.
+- - [ ] Can we get the double-click interval from window manager? Currently hard-coded to 500 ms in `gui_context.c`.
 - [ ] Generic widget.
 - - [ ] Events.
 - - [x] Focus ring.
@@ -52,4 +53,4 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - [ ] 15-pixel font. (15 significant pixels; probly more like 20 with descenders)
 - [ ] Embed a few standard fonts in the library, but do preserve ability to load from a file.
 - [ ] field: Different colors when blurred.
-- [ ] field: mouse
+- [x] field: mouse

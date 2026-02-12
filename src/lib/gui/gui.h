@@ -152,7 +152,12 @@ struct widget_type {
    */
   int (*track)(struct widget *widget,int state);
   
-  //TODO will also need raw mouse events
+  /* The three raw mouse events are only sent when (widget->rawmouse) is nonzero.
+   * Return nonzero to acknowledge, otherwise it bubbles up.
+   */
+  int (*mmotion)(struct widget *widget,int x,int y);
+  int (*mbutton)(struct widget *widget,int btnid,int value,int x,int y);
+  int (*mwheel)(struct widget *widget,int dx,int dy,int x,int y);
 };
  
 struct widget {
@@ -168,6 +173,7 @@ struct widget {
   uint32_t bgcolor; // If nonzero, fill my background with this. (individual render hooks are expected to, and the no-hook default will).
   int focusable; // Nonzero to accept keyboard focus. Set (ctx->tree_changed) if you change.
   int clickable; // Nonzero to enable click-and-track from the mouse.
+  int rawmouse; // Nonzero to receive mmotion, mbutton, and mwheel events when the mouse is hovering.
   uint32_t parentuse; // Private field for widget's parent's use only. eg for layout bookkeeping. Resets to zero when reparenting.
 };
 

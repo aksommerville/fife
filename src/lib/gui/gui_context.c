@@ -57,6 +57,7 @@ struct gui_context *gui_context_new(const struct gui_delegate *delegate) {
   if (ctx->delegate.update_rate<1.0) ctx->delegate.update_rate=60.0;
   ctx->focusp=-1;
   ctx->encoding=&text_encoding_utf8;
+  ctx->double_click_interval=0.500; // Some quick Googling suggests 500 is the prevailing default, and 100..900 the usual config range. Mine are pretty uniformly 100-130ms.
   
   struct wm_delegate wmdelegate={
     .cb_close=gui_cb_close,

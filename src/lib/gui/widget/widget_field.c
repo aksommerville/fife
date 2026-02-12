@@ -14,6 +14,8 @@ struct widget_field {
   void *userdata;
   int (*cb_preedit)(struct widget *widget,const char *before,int beforec,int p,int c,const char *incoming,int incomingc);
   void (*cb_postedit)(struct widget *widget,const char *text,int textc,int editp);
+  int dragging; // Nonzero while left mouse button held.
+  double click_time;
 };
 
 #define WIDGET ((struct widget_field*)widget)
@@ -46,6 +48,7 @@ static int _field_init(struct widget *widget,const void *args,int argslen) {
   widget->padx=5;
   widget->pady=3;
   widget->focusable=1;
+  widget->rawmouse=1;
   WIDGET->selw=-1;
   return 0;
 }
@@ -142,6 +145,65 @@ static int _field_key(struct widget *widget,int keycode,int value,int codepoint)
   return 0;
 }
 
+/* Mouse motion.
+ */
+ 
+static int _field_mmotion(struct widget *widget,int mx,int my) {
+  if (WIDGET->dragging) {
+    widget_coords_local_from_global(&mx,&my,widget);
+    int p=font_locate_point(WIDGET->font,WIDGET->text,WIDGET->textc,mx-widget->padx);
+    if (p<0) p=0; else if (p>WIDGET->textc) p=WIDGET->textc;
+    // The obvious thing would be to anchor where the drag started, then update only (selc).
+    // But I want the dragging end to be (selp) and the anchor (selp+selc), so if you Shift-Arrow after, your leading end remains operative.
+    // Hence a bit more arithmetic than feels necessary at a glance:
+    int nc=p-(WIDGET->selp+WIDGET->selc);
+    if (nc!=-WIDGET->selc) {
+      WIDGET->selp=p;
+      WIDGET->selc=-nc;
+      WIDGET->selw=-1;
+      widget->ctx->render_soon=1;
+    }
+  }
+  return 1;
+}
+
+/* Mouse button.
+ */
+ 
+static int _field_mbutton(struct widget *widget,int btnid,int value,int mx,int my) {
+  //fprintf(stderr,"%s %d=%d @%d,%d\n",__func__,btnid,value,mx,my);
+  
+  // We only care about the left button. And releasing is trivial.
+  if (btnid!=1) return 0;
+  if (!value) {
+    WIDGET->dragging=0;
+    return 1;
+  }
+  
+  // Where at?
+  widget_coords_local_from_global(&mx,&my,widget);
+  int p=font_locate_point(WIDGET->font,WIDGET->text,WIDGET->textc,mx-widget->padx);
+  if ((p<0)||(p>WIDGET->textc)) return 0; // font won't do this but let's be safe.
+  
+  // Double click?
+  double now=gui_now_real();
+  double elapsed=now-WIDGET->click_time;
+  if (elapsed<=widget->ctx->double_click_interval) {
+    widget_field_select_word(widget,p);
+    return 1;
+  }
+  WIDGET->click_time=now;
+  
+  // Drop selection and move insertion point to the click. Begin tracking.
+  WIDGET->selp=p;
+  WIDGET->selc=0;
+  WIDGET->selw=-1;
+  WIDGET->dragging=1;
+  widget->ctx->render_soon=1;
+
+  return 1;
+}
+
 /* Type definition.
  */
  
@@ -155,6 +217,8 @@ const struct widget_type widget_type_field={
   .render=_field_render,
   .focus=_field_focus,
   .key=_field_key,
+  .mmotion=_field_mmotion,
+  .mbutton=_field_mbutton,
 };
 
 /* Public accessors.
@@ -270,6 +334,33 @@ static void widget_field_move_cursor_word(struct widget *widget,struct text_deco
       return;
     }
   }
+}
+
+/* Select word.
+ * We can extend in either or both directions from (p) and can also set a zero-length selection.
+ * If you double-click on a space between two words, we will select one or the other and I don't care which.
+ * If you double-click in a range of wordless space or punctuation, no selection, just the insertion point moves to nearby.
+ */
+ 
+int widget_field_select_word(struct widget *widget,int p) {
+  if (!widget||(widget->type!=&widget_type_field)) return -1;
+  if (p<0) p=0; else if (p>WIDGET->textc) p=WIDGET->textc;
+  int p0=p;
+  int c=0,codepoint;
+  // First read backward and stop before the first non-word character.
+  struct text_decoder decoder={.v=WIDGET->text,.c=WIDGET->textc,.p=p,.encoding=widget->ctx->encoding};
+  while (text_decoder_unread(&codepoint,&decoder)>0) {
+    if (!wordchar(codepoint)) break;
+    p=decoder.p;
+    c=p0-p;
+  }
+  // Then return to the first position and extend to before the first non-word character.
+  decoder.p=p0;
+  while (text_decoder_read(&codepoint,&decoder)>0) {
+    if (!wordchar(codepoint)) break;
+    c=decoder.p-p;
+  }
+  return widget_field_set_selection(widget,p,c);
 }
 
 /* Move cursor.

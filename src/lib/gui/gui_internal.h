@@ -25,6 +25,7 @@ struct gui_context {
   struct widget *root;
   int render_soon;
   int tree_changed; // Widgets set nonzero any time a widget is added, removed, or order changed.
+  double double_click_interval; // s
   
   // First in the list is our default.
   struct font_entry {

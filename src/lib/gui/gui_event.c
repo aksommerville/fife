@@ -87,33 +87,6 @@ void gui_cb_key(int keycode,int value,int codepoint) {
   }
 }
 
-/* Mouse motion, client coords.
- */
- 
-void gui_cb_mmotion(int x,int y) {
-  //fprintf(stderr,"%s %d,%d\n",__func__,x,y);
-  struct gui_context *ctx=gui_global_context;
-  if (!ctx) return;
-  if ((x==ctx->mx)&&(y==ctx->my)) return;
-  
-  if (ctx->track) {
-    if (widget_point_in_bounds(ctx->track,x,y)) {
-      if (!ctx->track_in) {
-        ctx->track->type->track(ctx->track,GUI_TRACK_REENTER);
-        ctx->track_in=1;
-      }
-    } else {
-      if (ctx->track_in) {
-        ctx->track->type->track(ctx->track,GUI_TRACK_EXIT);
-        ctx->track_in=0;
-      }
-    }
-  }
-  
-  ctx->mx=x;
-  ctx->my=y;
-}
-
 /* Find a widget that supports tracking, at the given point.
  */
  
@@ -128,6 +101,58 @@ static struct widget *gui_find_track_widget(struct widget *widget,int x,int y) {
   }
   if (!widget->clickable) return 0;
   return widget;
+}
+
+/* Find the innermost widget that supports raw mouse events, at the given point.
+ */
+ 
+static struct widget *gui_find_mouse_widget(struct widget *widget,int x,int y) {
+  if (!widget_point_in_bounds(widget,x,y)) return 0;
+  struct widget **childp=widget->childv;
+  int i=widget->childc;
+  for (;i-->0;childp++) {
+    struct widget *child=*childp;
+    struct widget *found=gui_find_mouse_widget(child,x,y);
+    if (found) return found;
+  }
+  if (!widget->rawmouse) return 0;
+  return widget;
+}
+
+/* Mouse motion, client coords.
+ */
+ 
+void gui_cb_mmotion(int x,int y) {
+  //fprintf(stderr,"%s %d,%d\n",__func__,x,y);
+  struct gui_context *ctx=gui_global_context;
+  if (!ctx) return;
+  if ((x==ctx->mx)&&(y==ctx->my)) return;
+  
+  // Tracking?
+  if (ctx->track) {
+    if (widget_point_in_bounds(ctx->track,x,y)) {
+      if (!ctx->track_in) {
+        ctx->track->type->track(ctx->track,GUI_TRACK_REENTER);
+        ctx->track_in=1;
+      }
+    } else {
+      if (ctx->track_in) {
+        ctx->track->type->track(ctx->track,GUI_TRACK_EXIT);
+        ctx->track_in=0;
+      }
+    }
+  
+  // Raw.
+  } else {
+    struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
+    while (hover) {
+      if (hover->rawmouse&&hover->type->mmotion&&hover->type->mmotion(hover,ctx->mx,ctx->my)) break;
+      hover=hover->parent;
+    }
+  }
+  
+  ctx->mx=x;
+  ctx->my=y;
 }
 
 /* Mouse button. 1,2,3 = left,right,center.
@@ -173,19 +198,24 @@ void gui_cb_mbutton(int btnid,int value) {
     }
   }
   
-  //TODO Deliver raw mouse events to whatever's clicked on.
+  /* Not tracking, send raw mouse events.
+   */
+  struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
+  while (hover) {
+    if (hover->rawmouse&&hover->type->mbutton&&hover->type->mbutton(hover,btnid,value,ctx->mx,ctx->my)) break;
+    hover=hover->parent;
+  }
 }
 
 /* Mouse wheel.
  */
  
 void gui_cb_mwheel(int dx,int dy) {
-  fprintf(stderr,"%s %+d,%+d\n",__func__,dx,dy);
-  //XXX test scrolling.
-  struct widget *root=gui_global_context->root;
-  if (!root) return;
-  root->scrollx+=dx*5;
-  root->scrolly+=dy*5;
-  fprintf(stderr,"...scroll %d,%d\n",root->scrollx,root->scrolly);
-  gui_global_context->render_soon=1;
+  struct gui_context *ctx=gui_global_context;
+  if (!ctx) return;
+  struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
+  while (hover) {
+    if (hover->rawmouse&&hover->type->mwheel&&hover->type->mwheel(hover,dx,dy,ctx->mx,ctx->my)) break;
+    hover=hover->parent;
+  }
 }

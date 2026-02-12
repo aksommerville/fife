@@ -53,6 +53,11 @@ void font_set_color_misencode(struct font *font,uint32_t color);
  */
 int font_measure_string(struct font *font,const char *src,int srcc);
 
+/* Returns (0..srcc), the nearest glyph boundary in (src) to (x) if this string were rendered at (x==0).
+ * ie the reverse of font_measure_string().
+ */
+int font_locate_point(struct font *font,const char *src,int srcc,int x);
+
 /* How wide would a tofu be for this codepoint?
  * Always a multiple of the glyph width.
  */

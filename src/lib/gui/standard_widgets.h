@@ -87,6 +87,7 @@ void *widget_field_get_userdata(const struct widget *widget);
 int widget_field_set_userdata(struct widget *widget,void *userdata);
 int widget_field_get_selection(int *p,const struct widget *widget); // => c
 int widget_field_set_selection(struct widget *widget,int p,int c); // (c<0) to extend to the end, ie (0,-1) is "select all"
+int widget_field_select_word(struct widget *widget,int p); // Sets selection to the word surrounding (p), by our own definition of "word".
 
 /* Text entry operations.
  * Our key event hook calls these, and you can too.
