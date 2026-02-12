@@ -114,10 +114,10 @@ static int _field_key(struct widget *widget,int keycode,int value,int codepoint)
     case 0x00070029: break; // Escape
     case 0x0007002a: widget_field_backspace(widget); return 1; // Backspace
     case 0x00070049: break; // Insert
-    case 0x0007004a: widget_field_set_selection(widget,0,0); return 1; // Home
+    case 0x0007004a: widget_field_move_cursor(widget,0,-1); return 1; // Home -- use move_cursor in case Shift is involved.
     case 0x0007004b: break; // Page Up
     case 0x0007004c: widget_field_delete(widget); return 1; // Delete
-    case 0x0007004d: widget_field_set_selection(widget,WIDGET->textc,0); return 1; // End
+    case 0x0007004d: widget_field_move_cursor(widget,0,1); return 1; // End -- use move_cursor in case Shift is involved.
     case 0x0007004e: break; // Page Down
     case 0x0007004f: widget_field_move_cursor(widget,1,0); return 1; // Right
     case 0x00070050: widget_field_move_cursor(widget,-1,0); return 1; // Left
@@ -243,21 +243,56 @@ int widget_field_set_selection(struct widget *widget,int p,int c) {
   return 0;
 }
 
+/* Move cursor by words (while holding control).
+ * This only advances (encoder); caller does the rest.
+ */
+ 
+static int wordchar(int codepoint) {
+  if ((codepoint>=0x30)&&(codepoint<=0x39)) return 1;
+  if ((codepoint>=0x41)&&(codepoint<=0x5a)) return 1;
+  if ((codepoint>=0x61)&&(codepoint<=0x7a)) return 1;
+  // 0x5f Underscore is *not* a word character. Most text editors say it is, but I disagree.
+  // I'm not bothering with anything outside G0, since we don't print those anyway.
+  return 0;
+}
+ 
+static void widget_field_move_cursor_word(struct widget *widget,struct text_decoder *decoder,int dx) {
+  int lead=1;
+  for (;;) {
+    int codepoint,err,pvp=decoder->p;
+    if (dx<0) err=text_decoder_unread(&codepoint,decoder);
+    else err=text_decoder_read(&codepoint,decoder);
+    if (err<1) return;
+    if (wordchar(codepoint)) {
+      lead=0;
+    } else if (!lead) { // First non-word after first word: Unread it and stop.
+      decoder->p=pvp;
+      return;
+    }
+  }
+}
+
 /* Move cursor.
  */
  
 int widget_field_move_cursor(struct widget *widget,int dx,int dy) {
   if (!widget||(widget->type!=&widget_type_field)) return -1;
-  //TODO Shift to extend selection.
-  //TODO Control to jump by words.
+  
+  // Capture the Before state, in case Shift is in play.
+  int op=WIDGET->selp,oc=WIDGET->selc;
+  int shift=(widget->ctx->modifiers&GUI_MOD_SHIFT);
+  
   // Since we're single-line only, at least for the time being, (dy) is equivalent to Home or End.
   if (dy<0) {
-    widget_field_set_selection(widget,0,0);
+    WIDGET->selp=0;
+    WIDGET->selc=0;
   } else if (dy>0) {
-    widget_field_set_selection(widget,WIDGET->textc,0);
+    WIDGET->selp=WIDGET->textc;
+    WIDGET->selc=0;
+  
   } else if (!dx) {
     return 0; // Why did they call us?
-  } else if (WIDGET->selc) {
+  } else if (WIDGET->selc&&!shift) {
     // There was a selection. First move releases it and leaves cursor on the indicated edge.
     if (dx<0) {
       if (WIDGET->selc<0) WIDGET->selp+=WIDGET->selc;
@@ -266,18 +301,26 @@ int widget_field_move_cursor(struct widget *widget,int dx,int dy) {
       if (WIDGET->selc>0) WIDGET->selp+=WIDGET->selc;
       WIDGET->selc=0;
     }
-    WIDGET->selw=-1;
   } else {
     // No selection. Move the cursor.
     struct text_decoder decoder={.v=WIDGET->text,.c=WIDGET->textc,.p=WIDGET->selp,.encoding=widget->ctx->encoding};
-    int codepoint;
-    if (dx<0) text_decoder_unread(&codepoint,&decoder);
-    else text_decoder_read(&codepoint,&decoder);
+    if (widget->ctx->modifiers&GUI_MOD_CTL) {
+      widget_field_move_cursor_word(widget,&decoder,dx);
+    } else { // Single codepoint.
+      int codepoint;
+      if (dx<0) text_decoder_unread(&codepoint,&decoder);
+      else text_decoder_read(&codepoint,&decoder);
+    }
     WIDGET->selp=decoder.p;
-    widget->ctx->render_soon=1;
-    WIDGET->selw=-1;
   }
+  
+  // If they're holding Shift, the new selection runs from current cursor to end of the old selection.
+  if (shift) {
+    WIDGET->selc=op+oc-WIDGET->selp;
+  }
+  
   widget->ctx->render_soon=1;
+  WIDGET->selw=-1;
   return 0;
 }
 

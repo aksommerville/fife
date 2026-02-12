@@ -37,7 +37,7 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - - [x] Packer.
 - - [x] Label.
 - - [x] Button.
-- - [ ] Text field.
+- - [x] Text field.
 - - [ ] Checkbox.
 - - [x] Scroller. XXX All widgets have this capability.
 - - [ ] Text editor.
@@ -51,3 +51,5 @@ Once `fifet` works, I'll begin a new project `piccolo`, an image editor.
 - [ ] Plugin framework. WAMR?
 - [ ] 15-pixel font. (15 significant pixels; probly more like 20 with descenders)
 - [ ] Embed a few standard fonts in the library, but do preserve ability to load from a file.
+- [ ] field: Different colors when blurred.
+- [ ] field: mouse

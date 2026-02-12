@@ -29,11 +29,8 @@ static void cb_cancel(struct widget *widget,void *userdata) {
 }
 
 static int cb_preedit(struct widget *widget,const char *text,int textc,int p,int c,const char *src,int srcc) {
-  if ((srcc==1)&&(src[0]=='u')) {
-    fprintf(stderr,"U IS FORBIDDEN\n");
-    return 1;
-  }
-  fprintf(stderr,"%s: Replacing '%.*s'(%d@%d) with '%.*s'\n",__func__,c,text+p,c,p,srcc,src);
+  // Return nonzero to reject the change.
+  //fprintf(stderr,"%s: Replacing '%.*s'(%d@%d) with '%.*s'\n",__func__,c,text+p,c,p,srcc,src);
   return 0;
 }
 
