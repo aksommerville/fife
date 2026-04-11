@@ -145,7 +145,7 @@ int widget_childv_search(const struct widget *parent,const struct widget *child)
   if (!parent||!child) return -1;
   int i=0;
   struct widget **p=parent->childv;
-  for (;i<parent->childc;p++) if (*p==child) return i;
+  for (;i<parent->childc;i++,p++) if (*p==child) return i;
   return -1;
 }
 

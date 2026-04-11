@@ -38,6 +38,10 @@ static void cb_checkbox(struct widget *widget,int value,void *userdata) {
   fprintf(stderr,"%s %d\n",__func__,value);
 }
 
+static void cb_menu(struct widget *widget,void *userdata) {
+  fprintf(stderr,"%s %p\n",__func__,widget);
+}
+
 /* Main.
  */
  
@@ -56,6 +60,60 @@ int main(int argc,char **argv) {
     return 1;
   }
   
+  /* Realistic dashboard. */
+  struct widget *root=0,*child=0;
+  {
+    struct widget_args_dashboard args={
+      .use_menubar=1,
+      .use_left_panel=1,
+      .use_bottom_panel=1,
+      .use_right_panel=1,
+      .use_tabs=1,
+      .cb_menu=cb_menu,
+      .userdata=0,
+    };
+    if (!(root=gui_context_create_root(gui,&widget_type_dashboard,&args,sizeof(args)))) return 1;
+    struct widget *menubar=widget_dashboard_get_menubar(root);
+    struct widget *left=widget_dashboard_get_left_panel(root);
+    struct widget *bottom=widget_dashboard_get_bottom_panel(root);
+    struct widget *right=widget_dashboard_get_right_panel(root);
+    struct widget *main=widget_dashboard_get_main_panel(root);
+    if (!menubar||!left||!bottom||!right||!main) {
+      fprintf(stderr,"%s: One or more child of dashboard didn't get created.\n",argv[0]);
+      return 1;
+    }
+    struct widget *menu;
+    if (menu=widget_menubar_spawn_menu(menubar,"File",4)) {
+      if (child=widget_menu_spawn_option(menu,"New",3)) {
+      }
+      if (child=widget_menu_spawn_option(menu,"Open",4)) {
+      }
+      if (child=widget_menu_spawn_option(menu,"Save",4)) {
+      }
+    }
+    if (menu=widget_menubar_spawn_menu(menubar,"Edit",4)) {
+      if (child=widget_menu_spawn_option(menu,"Undo",4)) {
+      }
+      if (child=widget_menu_spawn_option(menu,"Cut",3)) {
+      }
+      if (child=widget_menu_spawn_option(menu,"Copy",4)) {
+      }
+      if (child=widget_menu_spawn_option(menu,"Paste",5)) {
+      }
+    }
+    if (child=widget_tabber_spawn(main,"Untitled-1",10,&widget_type_dummy,0,0)) {
+      child->padx=40;
+      child->pady=40;
+      child->bgcolor=wm_pixel_from_rgbx(0xff8000ff);
+    }
+    if (child=widget_tabber_spawn(main,"Untitled-2",10,&widget_type_dummy,0,0)) {
+      child->padx=40;
+      child->pady=40;
+      child->bgcolor=wm_pixel_from_rgbx(0x008000ff);
+    }
+  }
+  /**/
+  
   /* textedit *
   struct widget_args_textedit args={
   };
@@ -66,7 +124,7 @@ int main(int argc,char **argv) {
   }
   /**/
   
-  /* Simple set of widgets for testing. */
+  /* Simple set of widgets for testing. *
   struct widget *root=0,*child;
   {
     struct widget_args_packer args={

@@ -96,6 +96,10 @@ int gui_defer_widget_task(struct widget *widget,double delay_s,void (*cb)(struct
 void gui_cancel_task(struct gui_context *ctx,int taskid);
 int gui_set_task_cleanup(struct gui_context *ctx,int taskid,void (*cb_cleanup)(struct widget *widget,void *userdata));
 
+int gui_add_modal(struct gui_context *ctx,struct widget *modal);
+int gui_remove_modal(struct gui_context *ctx,struct widget *modal);
+struct widget *gui_get_modal(const struct gui_context *ctx);
+
 /* Generic widget.
  *******************************************************************/
  

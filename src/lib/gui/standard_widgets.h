@@ -6,6 +6,124 @@
 #ifndef STANDARD_WIDGETS_H
 #define STANDARD_WIDGETS_H
 
+/* dummy: No extra behavior. Separator uses it as a placeholder.
+ *******************************************************************************/
+ 
+extern const struct widget_type widget_type_dummy;
+
+/* dashboard: Menu bar and tabbed panels, recommended for gui's root.
+ ********************************************************************************/
+ 
+extern const struct widget_type widget_type_dashboard;
+
+struct widget_args_dashboard {
+  int use_menubar;
+  int use_left_panel;
+  int use_bottom_panel;
+  int use_right_panel;
+  int use_tabs;
+  void (*cb_menu)(struct widget *widget,void *userdata);
+  void *userdata;
+};
+
+/* Main panel is a tabber initially if you requested that. Otherwise it's null.
+ */
+struct widget *widget_dashboard_get_menubar(const struct widget *widget);
+struct widget *widget_dashboard_get_left_panel(const struct widget *widget);
+struct widget *widget_dashboard_get_bottom_panel(const struct widget *widget);
+struct widget *widget_dashboard_get_right_panel(const struct widget *widget);
+struct widget *widget_dashboard_get_main_panel(const struct widget *widget);
+
+/* The panels you requested at init are null until you spawn into them.
+ * This will first delete anything existing in that slot.
+ * If you requested tabs, spawning main creates a new tab.
+ */
+struct widget *widget_dashboard_spawn_left_panel(struct widget *widget,const struct widget_type *type,const void *args,int argslen);
+struct widget *widget_dashboard_spawn_bottom_panel(struct widget *widget,const struct widget_type *type,const void *args,int argslen);
+struct widget *widget_dashboard_spawn_right_panel(struct widget *widget,const struct widget_type *type,const void *args,int argslen);
+struct widget *widget_dashboard_spawn_main_panel(struct widget *widget,const struct widget_type *type,const void *args,int argslen);
+
+/* menubar: Popup menus arranged horizontally.
+ *********************************************************************************/
+ 
+extern const struct widget_type widget_type_menubar;
+
+struct widget_args_menubar {
+  struct font *font;
+  void (*cb)(struct widget *widget,void *userdata); // (widget) is not this menubar; it's whatever was selected.
+  void *userdata;
+};
+
+struct widget *widget_menubar_spawn_menu(struct widget *widget,const char *label,int labelc);
+
+/* menu: Popup menu. It's a button at rest, and we produce the modal menu when clicked.
+ ********************************************************************************/
+ 
+extern const struct widget_type widget_type_menu;
+
+struct widget_args_menu {
+  struct font *font;
+  const char *text;
+  int textc;
+  void (*cb)(struct widget *widget,void *userdata);
+  void *userdata;
+};
+
+struct widget *widget_menu_spawn_option(struct widget *widget,const char *label,int labelc);
+
+/* separator: Two panels with an interactive divider between them. Horizontal or vertical.
+ ********************************************************************************/
+ 
+extern const struct widget_type widget_type_separator;
+
+struct widget_args_separator {
+  char orient; // 'x' or 'y'
+  int size; // Initial width or height of the left or top half, in pixels. Ignored if zero.
+  int pct; // (size) but a percentage. Ignored if zero.
+};
+
+/* Null if it's a placeholder.
+ */
+struct widget *widget_separator_get_panel(const struct widget *widget,int side);
+
+/* (side) is 0 or 1.
+ * If we already had a panel in that slot, it is gracefully destroyed.
+ * As a convenience, we defer to regular widget_spawn() if (widget) is not a separator.
+ * (type) may be null to remove the current panel and spawn a new placeholder, which will be returned (unlike widget_separator_get_panel).
+ * If you spawn a dummy panel, that's fine, but we won't be able to distinguish it from our placeholder, so you won't get it back from get_panel().
+ */
+struct widget *widget_separator_spawn_panel(struct widget *widget,int side,const struct widget_type *type,const void *args,int argslen);
+
+/* tabber: Row of tabs, with a big content panel below.
+ ***********************************************************************************/
+ 
+extern const struct widget_type widget_type_tabber;
+
+struct widget_args_tabber {
+  struct font *font;
+};
+
+// Returns the panel. If you want its tab, see below.
+struct widget *widget_tabber_spawn(
+  struct widget *widget,
+  const char *label,int labelc,
+  const struct widget_type *type,
+  const void *args,int argslen
+);
+
+int widget_tabber_count_tabs(const struct widget *widget);
+int widget_tabber_find_tab(const struct widget *widget,const struct widget *panel);
+struct widget *widget_tabber_get_tab(const struct widget *widget,int p);
+struct widget *widget_tabber_get_panel(const struct widget *widget,int p);
+struct widget *widget_tabber_get_tab_for_panel(const struct widget *widget,const struct widget *panel);
+struct widget *widget_tabber_get_panel_for_tab(const struct widget *widget,const struct widget *tab);
+
+/* Do not add or remove children directly on a tabber.
+ */
+int widget_tabber_remove_tab(struct widget *widget,int p);
+
+int widget_tabber_focus_tab(struct widget *widget,int p);
+
 /* packer: Generic container that arranges its children 1-dimensionally.
  *******************************************************************************/
  

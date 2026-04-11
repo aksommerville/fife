@@ -35,6 +35,10 @@ struct gui_context {
   } *fontv;
   int fontc,fonta;
   
+  // Modals.
+  struct widget **modalv; // STRONG
+  int modalc,modala;
+  
   // Focus ring.
   struct widget **focusv; // STRONG
   int focusc,focusa,focusp;

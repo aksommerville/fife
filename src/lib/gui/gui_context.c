@@ -30,6 +30,10 @@ void gui_context_del(struct gui_context *ctx) {
     }
     free(ctx->deferredv);
   }
+  if (ctx->modalv) {
+    while (ctx->modalc-->0) widget_del(ctx->modalv[ctx->modalc]);
+    free(ctx->modalv);
+  }
   if (ctx->focusv) {
     while (ctx->focusc-->0) widget_del(ctx->focusv[ctx->focusc]);
     free(ctx->focusv);
@@ -91,6 +95,8 @@ struct gui_context *gui_context_new(const struct gui_delegate *delegate) {
  
 void gui_render(struct gui_context *ctx) {
   if (!ctx->root) return;
+  
+  // Root renders straight onto the framebuffer.
   int fbw=0,fbh=0,stride=0;
   void *fb=wm_get_framebuffer(&fbw,&fbh,&stride);
   if (!fb) return;
@@ -104,6 +110,37 @@ void gui_render(struct gui_context *ctx) {
     .writeable=1,
   };
   widget_render(ctx->root,&image);
+  
+  // Modals.
+  if (ctx->modalc>0) {
+    int stridewords=stride>>2;
+    int i=0;
+    for (;i<ctx->modalc;i++) {
+      struct widget *modal=ctx->modalv[i];
+      int x=modal->x;
+      int y=modal->y;
+      int w=modal->w;
+      int h=modal->h;
+      int x0=0,y0=0;
+      if (x<0) { x0=x; w+=x; x=0; }
+      if (y<0) { y0=y; h+=y; y=0; }
+      if (x>fbw-w) w=fbw-x;
+      if (y>fbh-h) h=fbh-y;
+      if ((w<1)||(h<1)) continue;
+      struct image sub={
+        .v=((uint32_t*)fb)+stridewords*y+x,
+        .w=w,
+        .h=h,
+        .stride=stride,
+        .pixelsize=32,
+        .writeable=1,
+        .x0=x0,
+        .y0=y0,
+      };
+      widget_render(modal,&sub);
+    }
+  }
+  
   wm_framebuffer_dirty(0,0,fbw,fbh);
 }
 
@@ -137,6 +174,8 @@ int gui_update(struct gui_context *ctx,double elapsed) {
   if (ctx->tree_changed) {
     ctx->tree_changed=0;
     widget_pack(ctx->root);
+    int i=ctx->modalc;
+    while (i-->0) widget_pack(ctx->modalv[i]);
     gui_rebuild_focus_ring(ctx);
     ctx->render_soon=1;
   }
@@ -311,4 +350,46 @@ int gui_set_task_cleanup(struct gui_context *ctx,int taskid,void (*cb_cleanup)(s
     return 0;
   }
   return -1;
+}
+
+/* Modal stack.
+ */
+ 
+int gui_add_modal(struct gui_context *ctx,struct widget *modal) {
+  if (!ctx||!modal) return -1;
+  if (modal->parent) return -1;
+  if (ctx->modalc>=ctx->modala) {
+    int na=ctx->modala+8;
+    if (na>INT_MAX/sizeof(void*)) return -1;
+    void *nv=realloc(ctx->modalv,sizeof(void*)*na);
+    if (!nv) return -1;
+    ctx->modalv=nv;
+    ctx->modala=na;
+  }
+  if (widget_ref(modal)<0) return -1;
+  ctx->modalv[ctx->modalc++]=modal;
+  ctx->tree_changed=1;
+  gui_rebuild_focus_ring(ctx);
+  return 0;
+}
+
+int gui_remove_modal(struct gui_context *ctx,struct widget *modal) {
+  if (!ctx||!modal) return -1;
+  int i=ctx->modalc;
+  while (i-->0) {
+    if (ctx->modalv[i]!=modal) continue;
+    ctx->modalc--;
+    memmove(ctx->modalv+i,ctx->modalv+i+1,sizeof(void*)*(ctx->modalc-i));
+    ctx->tree_changed=1;
+    widget_del(modal);
+    gui_rebuild_focus_ring(ctx);
+    return 0;
+  }
+  return -1;
+}
+
+struct widget *gui_get_modal(const struct gui_context *ctx) {
+  if (!ctx) return 0;
+  if (ctx->modalc<1) return 0;
+  return ctx->modalv[ctx->modalc-1];
 }

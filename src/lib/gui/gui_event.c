@@ -24,6 +24,7 @@ void gui_cb_resize(int w,int h) {
     root->h=h;
     widget_pack(root);
   }
+  //TODO Should we repack modals somehow? Might not have all the knowledge they had at spawn.
 }
 
 /* Window focus or blur.
@@ -80,6 +81,9 @@ void gui_cb_key(int keycode,int value,int codepoint) {
   /* Not handled by the focussed widget, consider global actions.
    */
   if (value) switch (keycode) {
+    case 0x00070029: { // Esc
+        if (ctx->modalc>0) gui_remove_modal(ctx,ctx->modalv[ctx->modalc-1]);
+      } break;
     case 0x0007002b: { // Tab
         if (ctx->modifiers&GUI_MOD_SHIFT) gui_focus_next(ctx,-1);
         else gui_focus_next(ctx,1);
@@ -153,7 +157,9 @@ void gui_cb_mmotion(int x,int y) {
   
   // Raw.
   } else {
-    struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
+    struct widget *root=ctx->root;
+    if (ctx->modalc>0) root=ctx->modalv[ctx->modalc-1];
+    struct widget *hover=gui_find_mouse_widget(root,ctx->mx,ctx->my);
     while (hover) {
       struct widget *target=hover->proxyto?hover->proxyto:hover;
       if (target->rawmouse&&target->type->mmotion&&target->type->mmotion(target,ctx->mx,ctx->my)) break;
@@ -196,7 +202,9 @@ void gui_cb_mbutton(int btnid,int value) {
   /* Press of btnid 1 can begin a track.
    */
   if ((btnid==1)&&value) {
-    struct widget *track=gui_find_track_widget(ctx->root,ctx->mx,ctx->my);
+    struct widget *root=ctx->root;
+    if (ctx->modalc>0) root=ctx->modalv[ctx->modalc-1];
+    struct widget *track=gui_find_track_widget(root,ctx->mx,ctx->my);
     if (track) {
       struct widget *target=track->proxyto?track->proxyto:track;
       int ack=target->type->track(target,GUI_TRACK_BEGIN);
@@ -207,12 +215,19 @@ void gui_cb_mbutton(int btnid,int value) {
         if (target->focusable) gui_focus_widget(ctx,target);
         return;
       }
+    // If a modal is present and the click is outside that modal, dismiss it.
+    } else {
+      if ((root!=ctx->root)&&(ctx->mx<root->x)||(ctx->my<root->y)||(ctx->mx>=root->x+root->w)||(ctx->my>=root->y+root->h)) {
+        gui_remove_modal(ctx,root);
+      }
     }
   }
   
   /* Not tracking, send raw mouse events.
    */
-  struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
+  struct widget *root=ctx->root;
+  if (ctx->modalc>0) root=ctx->modalv[ctx->modalc-1];
+  struct widget *hover=gui_find_mouse_widget(root,ctx->mx,ctx->my);
   while (hover) {
     struct widget *target=hover->proxyto?hover->proxyto:hover;
     if (target->rawmouse&&target->type->mbutton&&target->type->mbutton(target,btnid,value,ctx->mx,ctx->my)) break;
@@ -226,7 +241,9 @@ void gui_cb_mbutton(int btnid,int value) {
 void gui_cb_mwheel(int dx,int dy) {
   struct gui_context *ctx=gui_global_context;
   if (!ctx) return;
-  struct widget *hover=gui_find_mouse_widget(ctx->root,ctx->mx,ctx->my);
+  struct widget *root=ctx->root;
+  if (ctx->modalc>0) root=ctx->modalv[ctx->modalc-1];
+  struct widget *hover=gui_find_mouse_widget(root,ctx->mx,ctx->my);
   while (hover) {
     struct widget *target=hover->proxyto?hover->proxyto:hover;
     if (target->rawmouse&&target->type->mwheel&&target->type->mwheel(target,dx,dy,ctx->mx,ctx->my)) break;

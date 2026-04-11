@@ -42,7 +42,7 @@ void gui_rebuild_focus_ring(struct gui_context *ctx) {
   // Yoink the previous focus if present.
   struct widget *pvfocus=0;
   if ((ctx->focusp>=0)&&(ctx->focusp<ctx->focusc)) {
-    pvfocus=ctx->focusv[ctx->focusc]; // HANDOFF, temporarily
+    pvfocus=ctx->focusv[ctx->focusp]; // HANDOFF, temporarily
     ctx->focusc--;
     memmove(ctx->focusv+ctx->focusp,ctx->focusv+ctx->focusp+1,sizeof(void*)*(ctx->focusc-ctx->focusp));
   }
@@ -55,7 +55,9 @@ void gui_rebuild_focus_ring(struct gui_context *ctx) {
   }
   
   // Call out to build the new ring.
-  gui_build_focus_ring(ctx,ctx->root);
+  struct widget *root=ctx->root;
+  if (ctx->modalc>0) root=ctx->modalv[ctx->modalc-1];
+  gui_build_focus_ring(ctx,root);
   
   // If there was a focus before, either blur it or update our (focusp).
   if (pvfocus) {
